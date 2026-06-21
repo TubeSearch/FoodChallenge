@@ -175,13 +175,20 @@ tr:hover td{background:var(--card-hover)}
 <script src="shared.js"></script>
 <script>
 const API = 'https://lavonia-cliquy-daniela.ngrok-free.dev';
+// Wrapper around fetch that always hits the API host and skips ngrok's
+// free-tier browser warning interstitial (which has no CORS headers and
+// otherwise breaks every request made from a real browser).
+function apiFetch(path, opts = {}) {
+  const headers = { 'ngrok-skip-browser-warning': 'true', ...(opts.headers || {}) };
+  return fetch(`${API}${path}`, { ...opts, headers });
+}
 let currentUser = null;
 let allUsers = [], allChallenges = [], allCompletions = [], stats = {};
 let jsonChallenges = [];
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
-  const res = await fetch(`${API}/api/auth/me`,{credentials:'include'});
+  const res = await apiFetch(`/api/auth/me`,{credentials:'include'});
   const data = await res.json();
   if (!data.user || data.user.role !== 'admin') {
     document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:-apple-system,sans-serif">
@@ -201,7 +208,7 @@ async function init() {
 
 async function refreshAll() {
   const [usersRes, challengesRes, completionsRes, statsRes] = await Promise.all([
-    fetch(`${API}/api/users`,{credentials:'include'}), fetch(`${API}/api/challenges`,{credentials:'include'}), fetch(`${API}/api/completions/all`,{credentials:'include'}), fetch(`${API}/api/stats`,{credentials:'include'})
+    apiFetch(`/api/users`,{credentials:'include'}), apiFetch(`/api/challenges`,{credentials:'include'}), apiFetch(`/api/completions/all`,{credentials:'include'}), apiFetch(`/api/stats`,{credentials:'include'})
   ]);
   allUsers = (await usersRes.json()).users || [];
   allChallenges = (await challengesRes.json()).challenges || [];
@@ -209,7 +216,7 @@ async function refreshAll() {
   stats = (await statsRes.json()).stats || {};
 
   // Load pending separately
-  const pendingRes = await fetch(`${API}/api/challenges/pending`,{credentials:'include'});
+  const pendingRes = await apiFetch(`/api/challenges/pending`,{credentials:'include'});
   const pendingData = await pendingRes.json();
   const pending = pendingData.challenges || [];
 
@@ -230,7 +237,7 @@ async function refreshAll() {
 }
 
 async function doLogout() {
-  await fetch(`${API}/api/auth/logout`, { method:'POST', credentials:'include' });
+  await apiFetch(`/api/auth/logout`, { method:'POST', credentials:'include' });
   window.location.href = '/';
 }
 
@@ -335,7 +342,7 @@ function mapPage() {
 
 // ── Pending page ──────────────────────────────────────────────────────────────
 async function pendingPage(actions) {
-  const res = await fetch(`${API}/api/challenges/pending`,{credentials:'include'});
+  const res = await apiFetch(`/api/challenges/pending`,{credentials:'include'});
   const data = await res.json();
   const pending = data.challenges || [];
   const c = document.getElementById('content');
@@ -581,7 +588,7 @@ function businessChallengesPage() {
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 async function reviewChallenge(id, action, reason) {
-  const res = await fetch(`${API}/api/challenges/${id}/review`, {
+  const res = await apiFetch(`/api/challenges/${id}/review`, {
     method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
     body: JSON.stringify({ action, reason })
   });
@@ -606,27 +613,27 @@ function promptReject(id) {
 
 async function deleteChallenge(id) {
   if (!confirm('Delete this challenge permanently?')) return;
-  const res = await fetch(`${API}/api/challenges/${id}`, { method:'DELETE', credentials:'include' });
+  const res = await apiFetch(`/api/challenges/${id}`, { method:'DELETE', credentials:'include' });
   if (!(await res.json()).ok) { alert('Error deleting'); return; }
   await refreshAll(); showPage('challenges');
 }
 
 async function approveUser(id) {
-  const res = await fetch(`${API}/api/users/${id}/approve`, { method:'POST', credentials:'include' });
+  const res = await apiFetch(`/api/users/${id}/approve`, { method:'POST', credentials:'include' });
   if (!(await res.json()).ok) { alert('Error approving'); return; }
   await refreshAll(); showPage('users');
 }
 
 async function deleteUser(id) {
   if (!confirm('Delete this user? This cannot be undone.')) return;
-  const res = await fetch(`${API}/api/users/${id}`, { method:'DELETE', credentials:'include' });
+  const res = await apiFetch(`/api/users/${id}`, { method:'DELETE', credentials:'include' });
   if (!(await res.json()).ok) { alert('Error deleting'); return; }
   await refreshAll(); showPage('users');
 }
 
 async function deleteCompletion(id) {
   if (!confirm('Delete this completion?')) return;
-  const res = await fetch(`${API}/api/completions/${id}`, { method:'DELETE', credentials:'include' });
+  const res = await apiFetch(`/api/completions/${id}`, { method:'DELETE', credentials:'include' });
   if (!(await res.json()).ok) { alert('Error'); return; }
   await refreshAll(); showPage('completions');
 }
@@ -701,7 +708,7 @@ async function saveChallengeEdit(id) {
   }
   const files=document.getElementById('edit-photos')?.files||[];
   for(const f of files) fd.append('photos',f);
-  const res=await fetch(`${API}/api/challenges/${id}`,{method:'PATCH',body:fd,credentials:'include'});
+  const res=await apiFetch(`/api/challenges/${id}`,{method:'PATCH',body:fd,credentials:'include'});
   const data=await res.json();
   if(!data.ok){document.getElementById('edit-error').textContent=data.error;return;}
   closeModal();await refreshAll();showPage('challenges');
@@ -752,7 +759,7 @@ async function saveUserEdit(id) {
   };
   const pw = document.getElementById('edit-user-pw').value;
   if (pw) body.password = pw;
-  const res = await fetch(`${API}/api/users/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify(body) });
+  const res = await apiFetch(`/api/users/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify(body) });
   const data = await res.json();
   if (!data.ok) { document.getElementById('edit-user-error').textContent=data.error; return; }
   closeModal(); await refreshAll(); showPage('users');
