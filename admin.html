@@ -182,6 +182,13 @@ function apiFetch(path, opts = {}) {
   const headers = { 'ngrok-skip-browser-warning': 'true', ...(opts.headers || {}) };
   return fetch(`${API}${path}`, { ...opts, headers });
 }
+// Resolves an image path for display. JSON-sourced challenges already have
+// full external URLs (https://...); DB-submitted challenges have server-
+// relative paths (/uploads/photos/...) that need the API host prefixed.
+function imgUrl(p) {
+  if (!p) return p;
+  return /^https?:\/\//i.test(p) ? p : `${API}${p}`;
+}
 let currentUser = null;
 let allUsers = [], allChallenges = [], allCompletions = [], stats = {};
 let jsonChallenges = [];
@@ -359,7 +366,7 @@ async function pendingPage(actions) {
     ${pending.map(ch => `
     <div style="padding:16px;border-bottom:1px solid var(--border)">
       <div style="display:flex;gap:12px;align-items:flex-start">
-        ${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center;font-size:20px">🍽️</div>'}
+        ${ch.imgSrc?`<img src="${imgUrl(ch.imgSrc)}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center;font-size:20px">🍽️</div>'}
         <div style="flex:1;min-width:0">
           <div style="font-size:15px;font-weight:700;margin-bottom:2px">${escHtml(ch.title)}</div>
           <div style="font-size:12px;color:var(--text2);margin-bottom:6px">${escHtml(ch.where||'')} · ${escHtml(ch.address||'')} · Submitted by <strong>${escHtml(ch.submittedByUsername)}</strong> ${timeAgo(ch.createdAt)}</div>
@@ -367,7 +374,7 @@ async function pendingPage(actions) {
           ${ch.website?`<div style="font-size:12px"><a href="${escHtml(ch.website)}" target="_blank" rel="noopener" style="color:var(--accent)">🌐 Visit website</a></div>`:''}
           ${ch.price||ch.weight||ch.timeLimit?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${[ch.price,ch.weight,ch.timeLimit].filter(Boolean).join(' · ')}</div>`:''}
           ${ch.description?`<div style="font-size:13px;margin-top:8px;line-height:1.5;color:var(--text2)">${escHtml(ch.description).substring(0,300)}${ch.description.length>300?'…':''}</div>`:''}
-          ${ch.photos&&ch.photos.length?`<div class="photo-strip" style="margin-top:8px">${ch.photos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:''}
+          ${ch.photos&&ch.photos.length?`<div class="photo-strip" style="margin-top:8px">${ch.photos.map(p=>`<img src="${imgUrl(p)}" onclick="window.open(imgUrl(p))">`).join('')}</div>`:''}
         </div>
       </div>
       <div class="td-actions" style="margin-top:12px">
@@ -396,7 +403,7 @@ function challengesPage(actions) {
 function renderChallengeRows(list) {
   if (!list.length) return `<tr><td colspan="8"><div class="empty-table"><div class="icon">🍽️</div><p>No challenges</p></div></td></tr>`;
   return list.map(ch=>`<tr>
-    <td>${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
+    <td>${ch.imgSrc?`<img src="${imgUrl(ch.imgSrc)}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
     <td><div class="truncate" style="max-width:180px;font-weight:600">${escHtml(ch.title)}</div></td>
     <td><div class="truncate">${escHtml(ch.address||'')}</div></td>
     <td><span class="tag tag-${ch.status}">${ch.status}</span></td>
@@ -523,7 +530,7 @@ function renderCompRows(list) {
     <td class="truncate">${escHtml(cp.challengeTitle||cp.challengeId)}</td>
     <td>${escHtml(cp.time||'—')}</td>
     <td><div class="truncate">${escHtml(cp.notes||'—')}</div></td>
-    <td>${cp.photos&&cp.photos.length?`<div class="photo-strip">${cp.photos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:'—'}</td>
+    <td>${cp.photos&&cp.photos.length?`<div class="photo-strip">${cp.photos.map(p=>`<img src="${imgUrl(p)}" onclick="window.open(imgUrl(p))">`).join('')}</div>`:'—'}</td>
     <td>${fmtDate(cp.createdAt)}</td>
     <td><button class="act-btn act-delete" onclick="deleteCompletion('${cp.id}')">Delete</button></td>
   </tr>`).join('');
@@ -570,7 +577,7 @@ function businessChallengesPage() {
       <thead><tr><th>Image</th><th>Title</th><th>Business</th><th>Address</th><th>Verification</th><th>Completions</th><th>Actions</th></tr></thead>
       <tbody>${bizChallenges.length===0?`<tr><td colspan="7"><div class="empty-table"><div class="icon">📋</div><p>No business challenges</p></div></td></tr>`:
       bizChallenges.map(ch=>`<tr>
-        <td>${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
+        <td>${ch.imgSrc?`<img src="${imgUrl(ch.imgSrc)}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
         <td><div class="truncate" style="font-weight:600">${escHtml(ch.title)}</div></td>
         <td>${escHtml(ch.submittedByUsername||'')}</td>
         <td class="truncate">${escHtml(ch.address||'')}</td>
@@ -687,7 +694,7 @@ function openChallengeModal(id) {
       <div class="modal-label">Add Photos</div>
       <input type="file" id="edit-photos" accept="image/*" multiple style="font-size:13px;color:var(--text2)">
     </div>
-    ${ch.photos&&ch.photos.length?`<div class="modal-section"><div class="modal-label">Current Photos</div><div class="photo-strip">${ch.photos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div></div>`:''}
+    ${ch.photos&&ch.photos.length?`<div class="modal-section"><div class="modal-label">Current Photos</div><div class="photo-strip">${ch.photos.map(p=>`<img src="${imgUrl(p)}" onclick="window.open(imgUrl(p))">`).join('')}</div></div>`:''}
     <div class="modal-section"><div class="modal-label">Description</div><textarea class="fc-input" id="edit-desc" rows="4">${escHtml(ch.description||'')}</textarea></div>
     <div id="edit-error" class="form-error"></div>
   `, [
