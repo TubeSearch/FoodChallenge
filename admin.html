@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel — Food Challenges</title>
 <link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 <style>
 body{display:flex;height:100dvh;overflow:hidden;background:var(--bg)}
 
@@ -113,26 +114,27 @@ tr:hover td{background:var(--card-hover)}
 <!-- Sidebar -->
 <div id="sidebar">
   <div id="sidebar-logo">
-    <h1>🍔 FC Admin</h1>
+    <h1><i class="fa-solid fa-burger"></i> FC Admin</h1>
     <p id="admin-subtitle">Food Challenges</p>
   </div>
   <nav id="sidebar-nav">
     <div class="nav-section">Overview</div>
-    <button class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">📊</span>Dashboard</button>
-    <button class="nav-item" onclick="showPage('map')"><span class="nav-icon">🗺️</span>View Map</button>
+    <button class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon"><i class="fa-solid fa-chart-simple"></i></span>Dashboard</button>
+    <button class="nav-item" onclick="showPage('map')"><span class="nav-icon"><i class="fa-solid fa-map-location-dot"></i></span>View Map</button>
 
     <div class="nav-section">Challenges</div>
-    <button class="nav-item" id="nav-pending" onclick="showPage('pending')"><span class="nav-icon">⏳</span>Pending Review<span class="nav-badge" id="pending-count" style="display:none">0</span></button>
-    <button class="nav-item" onclick="showPage('challenges')"><span class="nav-icon">🍽️</span>All Challenges</button>
-    <button class="nav-item" onclick="showPage('json-challenges')"><span class="nav-icon">📁</span>JSON Challenges</button>
+    <button class="nav-item" id="nav-pending" onclick="showPage('pending')"><span class="nav-icon"><i class="fa-solid fa-hourglass-half"></i></span>Pending Review<span class="nav-badge" id="pending-count" style="display:none">0</span></button>
+    <button class="nav-item" onclick="showPage('challenges')"><span class="nav-icon"><i class="fa-solid fa-utensils"></i></span>All Challenges</button>
+    <button class="nav-item" onclick="showPage('json-challenges')"><span class="nav-icon"><i class="fa-solid fa-folder"></i></span>JSON Challenges</button>
 
     <div class="nav-section">Community</div>
-    <button class="nav-item" id="nav-users-pending" onclick="showPage('users')"><span class="nav-icon">👥</span>Users<span class="nav-badge" id="users-pending-count" style="display:none">0</span></button>
-    <button class="nav-item" onclick="showPage('completions')"><span class="nav-icon">🏆</span>Completions</button>
+    <button class="nav-item" id="nav-users-pending" onclick="showPage('users')"><span class="nav-icon"><i class="fa-solid fa-users"></i></span>Users<span class="nav-badge" id="users-pending-count" style="display:none">0</span></button>
+    <button class="nav-item" onclick="showPage('completions')"><span class="nav-icon"><i class="fa-solid fa-trophy"></i></span>Completions</button>
+    <button class="nav-item" onclick="showPage('leaderboard')"><span class="nav-icon"><i class="fa-solid fa-ranking-star"></i></span>Leaderboard</button>
 
     <div class="nav-section">Business</div>
-    <button class="nav-item" onclick="showPage('business')"><span class="nav-icon">🏪</span>Business Accounts</button>
-    <button class="nav-item" onclick="showPage('business-challenges')"><span class="nav-icon">📋</span>Business Challenges</button>
+    <button class="nav-item" onclick="showPage('business')"><span class="nav-icon"><i class="fa-solid fa-store"></i></span>Business Accounts</button>
+    <button class="nav-item" onclick="showPage('business-challenges')"><span class="nav-icon"><i class="fa-solid fa-clipboard-list"></i></span>Business Challenges</button>
   </nav>
   <div id="sidebar-footer">
     <div id="user-chip">
@@ -141,7 +143,7 @@ tr:hover td{background:var(--card-hover)}
         <div id="user-name">Loading…</div>
         <div id="user-role">admin</div>
       </div>
-      <button id="logout-btn" title="Sign out" onclick="doLogout()">↩</button>
+      <button id="logout-btn" title="Sign out" onclick="doLogout()"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
     </div>
   </div>
 </div>
@@ -149,7 +151,7 @@ tr:hover td{background:var(--card-hover)}
 <!-- Main content -->
 <div id="main">
   <div id="topbar">
-    <button id="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+    <button id="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="fa-solid fa-bars"></i></button>
     <div id="page-title">Dashboard</div>
     <div id="topbar-actions"></div>
   </div>
@@ -165,7 +167,7 @@ tr:hover td{background:var(--card-hover)}
   <div id="modal-box">
     <div id="modal-header">
       <h2 id="modal-title">Modal</h2>
-      <button class="icon-btn" onclick="closeModal()">✕</button>
+      <button class="icon-btn" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div id="modal-body"></div>
     <div id="modal-footer" style="display:none"></div>
@@ -175,33 +177,19 @@ tr:hover td{background:var(--card-hover)}
 <script src="shared.js"></script>
 <script>
 const API = 'https://lavonia-cliquy-daniela.ngrok-free.dev';
-// Wrapper around fetch that always hits the API host and skips ngrok's
-// free-tier browser warning interstitial (which has no CORS headers and
-// otherwise breaks every request made from a real browser).
-function apiFetch(path, opts = {}) {
-  const headers = { 'ngrok-skip-browser-warning': 'true', ...(opts.headers || {}) };
-  return fetch(`${API}${path}`, { ...opts, headers });
-}
-// Resolves an image path for display. JSON-sourced challenges already have
-// full external URLs (https://...); DB-submitted challenges have server-
-// relative paths (/uploads/photos/...) that need the API host prefixed.
-function imgUrl(p) {
-  if (!p) return p;
-  return /^https?:\/\//i.test(p) ? p : `${API}${p}`;
-}
 let currentUser = null;
 let allUsers = [], allChallenges = [], allCompletions = [], stats = {};
 let jsonChallenges = [];
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
-  const res = await apiFetch(`/api/auth/me`,{credentials:'include'});
+  const res = await fcFetch(`${API}/api/auth/me`);
   const data = await res.json();
   if (!data.user || data.user.role !== 'admin') {
     document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:-apple-system,sans-serif">
-      <div style="font-size:40px">🔒</div>
+      <div style="font-size:40px;color:var(--text2)"><i class="fa-solid fa-lock"></i></div>
       <div style="font-size:18px;font-weight:700">Admin access required</div>
-      <a href="/" style="color:var(--accent)">← Back to map</a>
+      <a href="/" style="color:var(--accent)"><i class="fa-solid fa-arrow-left"></i> Back to map</a>
     </div>`;
     return;
   }
@@ -215,7 +203,7 @@ async function init() {
 
 async function refreshAll() {
   const [usersRes, challengesRes, completionsRes, statsRes] = await Promise.all([
-    apiFetch(`/api/users`,{credentials:'include'}), apiFetch(`/api/challenges`,{credentials:'include'}), apiFetch(`/api/completions/all`,{credentials:'include'}), apiFetch(`/api/stats`,{credentials:'include'})
+    fcFetch(`${API}/api/users`), fcFetch(`${API}/api/challenges`), fcFetch(`${API}/api/completions/all`), fcFetch(`${API}/api/stats`)
   ]);
   allUsers = (await usersRes.json()).users || [];
   allChallenges = (await challengesRes.json()).challenges || [];
@@ -223,7 +211,7 @@ async function refreshAll() {
   stats = (await statsRes.json()).stats || {};
 
   // Load pending separately
-  const pendingRes = await apiFetch(`/api/challenges/pending`,{credentials:'include'});
+  const pendingRes = await fcFetch(`${API}/api/challenges/pending`);
   const pendingData = await pendingRes.json();
   const pending = pendingData.challenges || [];
 
@@ -238,20 +226,20 @@ async function refreshAll() {
 
   // Load JSON challenges for reference
   try {
-    const jr = await fetch('/data/foodchallenges.json');
+    const jr = await fcFetch('/data/foodchallenges.json');
     jsonChallenges = await jr.json();
   } catch(e) { jsonChallenges = []; }
 }
 
 async function doLogout() {
-  await apiFetch(`/api/auth/logout`, { method:'POST', credentials:'include' });
+  await fcFetch(`${API}/api/auth/logout`, { method:'POST' });
   window.location.href = '/';
 }
 
 // ── Pages ─────────────────────────────────────────────────────────────────────
 function showPage(page) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  const navMap = {dashboard:0,map:1,pending:3,challenges:4,'json-challenges':5,users:7,completions:8,business:10,'business-challenges':11};
+  const navMap = {dashboard:0,map:1,pending:2,challenges:3,'json-challenges':4,users:5,completions:6,leaderboard:7,business:8,'business-challenges':9};
   const navItems = document.querySelectorAll('.nav-item');
   if (navMap[page] !== undefined && navItems[navMap[page]]) navItems[navMap[page]].classList.add('active');
 
@@ -261,14 +249,14 @@ function showPage(page) {
   const titles = {
     dashboard:'Dashboard', map:'Live Map', pending:'Pending Review',
     challenges:'All DB Challenges', 'json-challenges':'JSON Challenges',
-    users:'Users', completions:'Completions', business:'Business Accounts',
+    users:'Users', completions:'Completions', leaderboard:'Leaderboard', business:'Business Accounts',
     'business-challenges':'Business Challenges'
   };
   document.getElementById('page-title').textContent = titles[page] || page;
 
   const pages = { dashboard, map: mapPage, pending: pendingPage, challenges: challengesPage,
     'json-challenges': jsonChallengesPage, users: usersPage, completions: completionsPage,
-    business: businessPage, 'business-challenges': businessChallengesPage };
+    leaderboard: leaderboardPage, business: businessPage, 'business-challenges': businessChallengesPage };
   if (pages[page]) pages[page](actions);
 }
 
@@ -303,7 +291,7 @@ function dashboard() {
   // Recent submissions
   const recentSubs = [...allChallenges].sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
   document.getElementById('recent-submissions').innerHTML = recentSubs.length === 0
-    ? '<div class="empty-table"><div class="icon">✅</div><p>No submissions yet</p></div>'
+    ? '<div class="empty-table"><div class="icon"><i class="fa-solid fa-circle-check"></i></div><p>No submissions yet</p></div>'
     : recentSubs.map(c => `
       <div class="card-row" style="cursor:pointer" onclick="openChallengeModal('${c.id}')">
         <div style="flex:1;min-width:0">
@@ -316,7 +304,7 @@ function dashboard() {
   // Pending biz
   const pendingBiz = allUsers.filter(u => !u.approved && u.role === 'business_pending');
   document.getElementById('pending-biz').innerHTML = pendingBiz.length === 0
-    ? '<div class="empty-table"><div class="icon">🏪</div><p>No pending accounts</p></div>'
+    ? '<div class="empty-table"><div class="icon"><i class="fa-solid fa-store"></i></div><p>No pending accounts</p></div>'
     : pendingBiz.map(u => `
       <div class="card-row">
         <div style="flex:1;min-width:0">
@@ -329,7 +317,7 @@ function dashboard() {
   // Recent completions
   const recentComp = [...allCompletions].sort((a,b)=>b.createdAt-a.createdAt).slice(0,8);
   document.getElementById('recent-completions').innerHTML = recentComp.length === 0
-    ? '<div class="empty-table"><div class="icon">🏆</div><p>No completions yet</p></div>'
+    ? '<div class="empty-table"><div class="icon"><i class="fa-solid fa-trophy"></i></div><p>No completions yet</p></div>'
     : `<table><thead><tr><th>User</th><th>Challenge</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>
       ${recentComp.map(cp=>`<tr>
         <td><strong>${escHtml(cp.username)}</strong></td>
@@ -349,16 +337,16 @@ function mapPage() {
 
 // ── Pending page ──────────────────────────────────────────────────────────────
 async function pendingPage(actions) {
-  const res = await apiFetch(`/api/challenges/pending`,{credentials:'include'});
+  const res = await fcFetch(`${API}/api/challenges/pending`);
   const data = await res.json();
   const pending = data.challenges || [];
   const c = document.getElementById('content');
 
-  actions.innerHTML = `<button class="topbar-btn" onclick="refreshAll().then(()=>showPage('pending'))">↻ Refresh</button>`;
+  actions.innerHTML = `<button class="topbar-btn" onclick="refreshAll().then(()=>showPage('pending'))"><i class="fa-solid fa-rotate"></i> Refresh</button>`;
 
   if (pending.length === 0) {
     c.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:12px;color:var(--text2)">
-      <div style="font-size:48px">✅</div><div style="font-size:18px;font-weight:700">All caught up!</div><p>No pending submissions</p></div>`;
+      <div style="font-size:48px;color:var(--success)"><i class="fa-solid fa-circle-check"></i></div><div style="font-size:18px;font-weight:700">All caught up!</div><p>No pending submissions</p></div>`;
     return;
   }
 
@@ -366,22 +354,22 @@ async function pendingPage(actions) {
     ${pending.map(ch => `
     <div style="padding:16px;border-bottom:1px solid var(--border)">
       <div style="display:flex;gap:12px;align-items:flex-start">
-        ${ch.imgSrc?`<img src="${imgUrl(ch.imgSrc)}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center;font-size:20px">🍽️</div>'}
+        ${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center;font-size:16px"><i class="fa-solid fa-utensils"></i></div>'}
         <div style="flex:1;min-width:0">
           <div style="font-size:15px;font-weight:700;margin-bottom:2px">${escHtml(ch.title)}</div>
           <div style="font-size:12px;color:var(--text2);margin-bottom:6px">${escHtml(ch.where||'')} · ${escHtml(ch.address||'')} · Submitted by <strong>${escHtml(ch.submittedByUsername)}</strong> ${timeAgo(ch.createdAt)}</div>
-          ${ch.phone?`<div style="font-size:12px;color:var(--text2)">📞 ${escHtml(ch.phone)}</div>`:''}
-          ${ch.website?`<div style="font-size:12px"><a href="${escHtml(ch.website)}" target="_blank" rel="noopener" style="color:var(--accent)">🌐 Visit website</a></div>`:''}
+          ${ch.phone?`<div style="font-size:12px;color:var(--text2)"><i class="fa-solid fa-phone"></i> ${escHtml(ch.phone)}</div>`:''}
+          ${ch.website?`<div style="font-size:12px"><a href="${escHtml(ch.website)}" target="_blank" rel="noopener" style="color:var(--accent)"><i class="fa-solid fa-globe"></i> Visit website</a></div>`:''}
           ${ch.price||ch.weight||ch.timeLimit?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${[ch.price,ch.weight,ch.timeLimit].filter(Boolean).join(' · ')}</div>`:''}
           ${ch.description?`<div style="font-size:13px;margin-top:8px;line-height:1.5;color:var(--text2)">${escHtml(ch.description).substring(0,300)}${ch.description.length>300?'…':''}</div>`:''}
-          ${ch.photos&&ch.photos.length?`<div class="photo-strip" style="margin-top:8px">${ch.photos.map(p=>`<img src="${imgUrl(p)}" onclick="window.open(imgUrl(p))">`).join('')}</div>`:''}
+          ${ch.photos&&ch.photos.length?`<div class="photo-strip" style="margin-top:8px">${ch.photos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:''}
         </div>
       </div>
       <div class="td-actions" style="margin-top:12px">
-        <button class="act-btn act-approve" onclick="reviewChallenge('${ch.id}','approve')">✓ Approve & Verify</button>
-        <button class="act-btn act-verify" onclick="reviewChallenge('${ch.id}','admin_verify')">⭐ Admin Verify Only</button>
-        <button class="act-btn act-edit" onclick="openChallengeModal('${ch.id}')">✎ Edit</button>
-        <button class="act-btn act-reject" onclick="promptReject('${ch.id}')">✗ Reject</button>
+        <button class="act-btn act-approve" onclick="reviewChallenge('${ch.id}','approve')"><i class="fa-solid fa-check"></i> Approve & Verify</button>
+        <button class="act-btn act-verify" onclick="reviewChallenge('${ch.id}','admin_verify')"><i class="fa-solid fa-star"></i> Admin Verify Only</button>
+        <button class="act-btn act-edit" onclick="openChallengeModal('${ch.id}')"><i class="fa-solid fa-pen"></i> Edit</button>
+        <button class="act-btn act-reject" onclick="promptReject('${ch.id}')"><i class="fa-solid fa-xmark"></i> Reject</button>
       </div>
     </div>`).join('')}
   </div>`;
@@ -401,9 +389,9 @@ function challengesPage(actions) {
 }
 
 function renderChallengeRows(list) {
-  if (!list.length) return `<tr><td colspan="8"><div class="empty-table"><div class="icon">🍽️</div><p>No challenges</p></div></td></tr>`;
+  if (!list.length) return `<tr><td colspan="8"><div class="empty-table"><div class="icon"><i class="fa-solid fa-utensils"></i></div><p>No challenges</p></div></td></tr>`;
   return list.map(ch=>`<tr>
-    <td>${ch.imgSrc?`<img src="${imgUrl(ch.imgSrc)}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
+    <td>${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-utensils"></i></div>'}</td>
     <td><div class="truncate" style="max-width:180px;font-weight:600">${escHtml(ch.title)}</div></td>
     <td><div class="truncate">${escHtml(ch.address||'')}</div></td>
     <td><span class="tag tag-${ch.status}">${ch.status}</span></td>
@@ -412,6 +400,7 @@ function renderChallengeRows(list) {
     <td>${fmtDate(ch.createdAt)}</td>
     <td><div class="td-actions">
       <button class="act-btn act-view" onclick="openChallengeModal('${ch.id}')">View</button>
+      ${ch.lat&&ch.lng?`<button class="act-btn act-edit" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${ch.lat},${ch.lng}','_blank')"><i class="fa-solid fa-diamond-turn-right"></i></button>`:''}
       <button class="act-btn act-verify" onclick="reviewChallenge('${ch.id}','admin_verify')">Verify</button>
       <button class="act-btn act-delete" onclick="deleteChallenge('${ch.id}')">Delete</button>
     </div></td>
@@ -494,7 +483,7 @@ function filterUsersTable() {
   if (tbody) tbody.innerHTML=renderUserRows(list);
 }
 function renderUserRows(list) {
-  if (!list.length) return `<tr><td colspan="8"><div class="empty-table"><div class="icon">👥</div><p>No users found</p></div></td></tr>`;
+  if (!list.length) return `<tr><td colspan="8"><div class="empty-table"><div class="icon"><i class="fa-solid fa-users"></i></div><p>No users found</p></div></td></tr>`;
   return list.map(u=>`<tr>
     <td><strong>${escHtml(u.username)}</strong></td>
     <td>${escHtml(u.email)}</td>
@@ -524,13 +513,13 @@ function completionsPage(actions) {
   </div>`;
 }
 function renderCompRows(list) {
-  if (!list.length) return `<tr><td colspan="7"><div class="empty-table"><div class="icon">🏆</div><p>No completions</p></div></td></tr>`;
+  if (!list.length) return `<tr><td colspan="7"><div class="empty-table"><div class="icon"><i class="fa-solid fa-trophy"></i></div><p>No completions</p></div></td></tr>`;
   return list.map(cp=>`<tr>
     <td><strong>${escHtml(cp.username)}</strong></td>
     <td class="truncate">${escHtml(cp.challengeTitle||cp.challengeId)}</td>
     <td>${escHtml(cp.time||'—')}</td>
     <td><div class="truncate">${escHtml(cp.notes||'—')}</div></td>
-    <td>${cp.photos&&cp.photos.length?`<div class="photo-strip">${cp.photos.map(p=>`<img src="${imgUrl(p)}" onclick="window.open(imgUrl(p))">`).join('')}</div>`:'—'}</td>
+    <td>${cp.photos&&cp.photos.length?`<div class="photo-strip">${cp.photos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:'—'}</td>
     <td>${fmtDate(cp.createdAt)}</td>
     <td><button class="act-btn act-delete" onclick="deleteCompletion('${cp.id}')">Delete</button></td>
   </tr>`).join('');
@@ -542,6 +531,35 @@ function filterCompTable() {
   if(tbody) tbody.innerHTML=renderCompRows(filtered);
 }
 
+// ── Leaderboard page ──────────────────────────────────────────────────────────
+async function leaderboardPage(actions) {
+  const c = document.getElementById('content');
+  c.innerHTML = `<div id="loading-screen" style="display:flex;align-items:center;justify-content:center;height:200px;gap:12px;color:var(--text2)"><div class="spinner"></div><span>Loading…</span></div>`;
+  try {
+    const res = await fcFetch(`${API}/api/leaderboard`);
+    const data = await res.json();
+    const lb = data.leaderboard || [];
+    if (!lb.length) {
+      c.innerHTML = `<div class="empty-table"><div class="icon"><i class="fa-solid fa-trophy"></i></div><p>No verified completions yet</p></div>`;
+      return;
+    }
+    c.innerHTML = `<div class="section-card">
+      <div class="section-head"><h2>Top ${lb.length} by Verified Completions</h2></div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Rank</th><th>User</th><th>Verified</th><th>Total</th></tr></thead>
+        <tbody>${lb.map(u=>`<tr>
+          <td><strong>${u.rank<=3?`<i class="fa-solid fa-medal" style="color:${u.rank===1?'#ffd700':u.rank===2?'#c0c0c0':'#cd7f32'}"></i>`:'#'+u.rank}</strong></td>
+          <td>${escHtml(u.username||'Unknown')}</td>
+          <td><strong style="color:var(--accent)">${u.verified}</strong></td>
+          <td>${u.total}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+  } catch(e) {
+    c.innerHTML = `<div class="empty-table"><div class="icon"><i class="fa-solid fa-triangle-exclamation"></i></div><p>Could not load leaderboard</p></div>`;
+  }
+}
+
 // ── Business pages ────────────────────────────────────────────────────────────
 function businessPage(actions) {
   const bizUsers = allUsers.filter(u=>u.role==='business'||u.role==='business_pending');
@@ -550,7 +568,7 @@ function businessPage(actions) {
     <div class="section-head"><h2>${bizUsers.length} Business Accounts</h2></div>
     <div style="overflow-x:auto"><table>
       <thead><tr><th>Business</th><th>Owner</th><th>Email</th><th>Phone</th><th>Address</th><th>Status</th><th>Actions</th></tr></thead>
-      <tbody>${bizUsers.length===0?`<tr><td colspan="7"><div class="empty-table"><div class="icon">🏪</div><p>No business accounts</p></div></td></tr>`:
+      <tbody>${bizUsers.length===0?`<tr><td colspan="7"><div class="empty-table"><div class="icon"><i class="fa-solid fa-store"></i></div><p>No business accounts</p></div></td></tr>`:
       bizUsers.map(u=>`<tr>
         <td><strong>${escHtml(u.businessName||u.username)}</strong></td>
         <td>${escHtml(u.username)}</td>
@@ -575,9 +593,9 @@ function businessChallengesPage() {
     <div class="section-head"><h2>${bizChallenges.length} Business-Submitted Challenges</h2></div>
     <div style="overflow-x:auto"><table>
       <thead><tr><th>Image</th><th>Title</th><th>Business</th><th>Address</th><th>Verification</th><th>Completions</th><th>Actions</th></tr></thead>
-      <tbody>${bizChallenges.length===0?`<tr><td colspan="7"><div class="empty-table"><div class="icon">📋</div><p>No business challenges</p></div></td></tr>`:
+      <tbody>${bizChallenges.length===0?`<tr><td colspan="7"><div class="empty-table"><div class="icon"><i class="fa-solid fa-clipboard-list"></i></div><p>No business challenges</p></div></td></tr>`:
       bizChallenges.map(ch=>`<tr>
-        <td>${ch.imgSrc?`<img src="${imgUrl(ch.imgSrc)}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
+        <td>${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-utensils"></i></div>'}</td>
         <td><div class="truncate" style="font-weight:600">${escHtml(ch.title)}</div></td>
         <td>${escHtml(ch.submittedByUsername||'')}</td>
         <td class="truncate">${escHtml(ch.address||'')}</td>
@@ -595,8 +613,8 @@ function businessChallengesPage() {
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 async function reviewChallenge(id, action, reason) {
-  const res = await apiFetch(`/api/challenges/${id}/review`, {
-    method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
+  const res = await fcFetch(`${API}/api/challenges/${id}/review`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ action, reason })
   });
   const data = await res.json();
@@ -620,27 +638,27 @@ function promptReject(id) {
 
 async function deleteChallenge(id) {
   if (!confirm('Delete this challenge permanently?')) return;
-  const res = await apiFetch(`/api/challenges/${id}`, { method:'DELETE', credentials:'include' });
+  const res = await fcFetch(`${API}/api/challenges/${id}`, { method:'DELETE' });
   if (!(await res.json()).ok) { alert('Error deleting'); return; }
   await refreshAll(); showPage('challenges');
 }
 
 async function approveUser(id) {
-  const res = await apiFetch(`/api/users/${id}/approve`, { method:'POST', credentials:'include' });
+  const res = await fcFetch(`${API}/api/users/${id}/approve`, { method:'POST' });
   if (!(await res.json()).ok) { alert('Error approving'); return; }
   await refreshAll(); showPage('users');
 }
 
 async function deleteUser(id) {
   if (!confirm('Delete this user? This cannot be undone.')) return;
-  const res = await apiFetch(`/api/users/${id}`, { method:'DELETE', credentials:'include' });
+  const res = await fcFetch(`${API}/api/users/${id}`, { method:'DELETE' });
   if (!(await res.json()).ok) { alert('Error deleting'); return; }
   await refreshAll(); showPage('users');
 }
 
 async function deleteCompletion(id) {
   if (!confirm('Delete this completion?')) return;
-  const res = await apiFetch(`/api/completions/${id}`, { method:'DELETE', credentials:'include' });
+  const res = await fcFetch(`${API}/api/completions/${id}`, { method:'DELETE' });
   if (!(await res.json()).ok) { alert('Error'); return; }
   await refreshAll(); showPage('completions');
 }
@@ -694,7 +712,7 @@ function openChallengeModal(id) {
       <div class="modal-label">Add Photos</div>
       <input type="file" id="edit-photos" accept="image/*" multiple style="font-size:13px;color:var(--text2)">
     </div>
-    ${ch.photos&&ch.photos.length?`<div class="modal-section"><div class="modal-label">Current Photos</div><div class="photo-strip">${ch.photos.map(p=>`<img src="${imgUrl(p)}" onclick="window.open(imgUrl(p))">`).join('')}</div></div>`:''}
+    ${ch.photos&&ch.photos.length?`<div class="modal-section"><div class="modal-label">Current Photos</div><div class="photo-strip">${ch.photos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div></div>`:''}
     <div class="modal-section"><div class="modal-label">Description</div><textarea class="fc-input" id="edit-desc" rows="4">${escHtml(ch.description||'')}</textarea></div>
     <div id="edit-error" class="form-error"></div>
   `, [
@@ -715,7 +733,7 @@ async function saveChallengeEdit(id) {
   }
   const files=document.getElementById('edit-photos')?.files||[];
   for(const f of files) fd.append('photos',f);
-  const res=await apiFetch(`/api/challenges/${id}`,{method:'PATCH',body:fd,credentials:'include'});
+  const res=await fcFetch(`${API}/api/challenges/${id}`,{method:'PATCH',body:fd});
   const data=await res.json();
   if(!data.ok){document.getElementById('edit-error').textContent=data.error;return;}
   closeModal();await refreshAll();showPage('challenges');
@@ -766,7 +784,7 @@ async function saveUserEdit(id) {
   };
   const pw = document.getElementById('edit-user-pw').value;
   if (pw) body.password = pw;
-  const res = await apiFetch(`/api/users/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify(body) });
+  const res = await fcFetch(`${API}/api/users/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   const data = await res.json();
   if (!data.ok) { document.getElementById('edit-user-error').textContent=data.error; return; }
   closeModal(); await refreshAll(); showPage('users');
