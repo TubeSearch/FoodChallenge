@@ -305,6 +305,13 @@ function apiFetch(path, opts = {}) {
   const headers = { 'ngrok-skip-browser-warning': 'true', ...(opts.headers || {}) };
   return fetch(`${API}${path}`, { ...opts, headers });
 }
+// Resolves an image path for display. JSON-sourced challenges already have
+// full external URLs (https://...); DB-submitted challenges have server-
+// relative paths (/uploads/photos/...) that need the API host prefixed.
+function imgUrl(p) {
+  if (!p) return p;
+  return /^https?:\/\//i.test(p) ? p : `${API}${p}`;
+}
 const DARK = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -469,7 +476,7 @@ function render() {
       const stars=c.difficulty?'★'.repeat(c.difficulty)+'☆'.repeat(5-c.difficulty):'';
       const done=myCompletions.has(c.id||c.link);
       card.innerHTML=`
-        ${c.imgSrc?`<img class="card-img" src="${API}${c.imgSrc}" loading="lazy" onerror="this.outerHTML='<div class=\\'card-img-ph\\'>🍽️</div>'">`:`<div class="card-img-ph">🍽️</div>`}
+        ${c.imgSrc?`<img class="card-img" src="${imgUrl(c.imgSrc)}" loading="lazy" onerror="this.outerHTML='<div class=\\'card-img-ph\\'>🍽️</div>'">`:`<div class="card-img-ph">🍽️</div>`}
         <div class="card-body">
           <div class="card-title">${c.title||'Unknown Challenge'}</div>
           <div class="card-where">${c.where||c.address||''}</div>
@@ -516,8 +523,8 @@ function openDetail(c) {
   const extraPhotos=(c.photos||[]).slice(1);
   const done=myCompletions.has(c.id||c.link);
   document.getElementById('detail-content').innerHTML=`
-    ${c.imgSrc?`<div id="detail-hero-wrap"><img id="detail-hero" src="${API}${c.imgSrc}" alt=""></div>`:''}
-    ${extraPhotos.length?`<div class="detail-photos">${extraPhotos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:''}
+    ${c.imgSrc?`<div id="detail-hero-wrap"><img id="detail-hero" src="${imgUrl(c.imgSrc)}" alt=""></div>`:''}
+    ${extraPhotos.length?`<div class="detail-photos">${extraPhotos.map(p=>`<img src="${imgUrl(p)}" onclick="window.open(imgUrl(p))">`).join('')}</div>`:''}
     <div id="detail-body">
       <div id="detail-name">${c.title||'Challenge'}</div>
       <div id="detail-where">${c.where||''} ${c.location?'· '+c.location:''}</div>
@@ -682,7 +689,7 @@ async function showMyCompletions(){
         ${c.time?`<div style="font-size:12px;color:var(--accent);margin-top:2px">⏱ ${c.time}</div>`:''}
         ${c.notes?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${c.notes}</div>`:''}
         <div style="font-size:11px;color:var(--text2);margin-top:4px">${new Date(c.createdAt).toLocaleDateString()}</div>
-        ${c.photos&&c.photos.length?`<div style="display:flex;gap:4px;margin-top:6px">${c.photos.map(p=>`<img src="${API}${p}" style="width:50px;height:50px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
+        ${c.photos&&c.photos.length?`<div style="display:flex;gap:4px;margin-top:6px">${c.photos.map(p=>`<img src="${imgUrl(p)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
       </div>`).join('')}
   </div>`;
   menu.addEventListener('click',e=>{if(e.target===menu)menu.remove();});
