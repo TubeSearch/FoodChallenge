@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
+const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -42,6 +43,11 @@ const upload = multer({
 });
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+app.use(cors({
+  origin: true,        // reflect request origin (needed since you're serving the
+                        // frontend from a different host than the API now)
+  credentials: true     // allow the session cookie to be sent/received cross-origin
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('.'));
@@ -50,7 +56,11 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'fc-dev-secret-change-in-prod',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    sameSite: 'none',   // required for cross-origin cookies
+    secure: true         // required when sameSite is 'none' — needs HTTPS (ngrok gives you this)
+  }
 }));
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
