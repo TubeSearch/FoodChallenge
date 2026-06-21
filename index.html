@@ -297,6 +297,7 @@
 
 <script src="shared.js"></script>
 <script>
+const API = 'https://lavonia-cliquy-daniela.ngrok-free.dev';
 const DARK = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -336,7 +337,7 @@ async function loadAll() {
     }));
 
     // DB challenges (community submitted + business)
-    const dbRes = await fetch('/api/challenges');
+    const dbRes = await fetch(`${API}/api/challenges`,{credentials:'include'});
     const dbData = await dbRes.json();
     const dbChallenges = dbData.challenges || [];
 
@@ -357,7 +358,7 @@ async function loadAll() {
 }
 
 async function initAuth() {
-  const res = await fetch('/api/auth/me');
+  const res = await fetch(`${API}/api/auth/me`,{credentials:'include'});
   const data = await res.json();
   currentUser = data.user;
   updateAccountBtn();
@@ -370,13 +371,13 @@ async function initAuth() {
 
 async function loadMyCompletions() {
   if (!currentUser) return;
-  const res = await fetch('/api/completions/me');
+  const res = await fetch(`${API}/api/completions/me`,{credentials:'include'});
   const data = await res.json();
   myCompletions = new Set((data.completions || []).map(c => c.challengeId));
 }
 
 async function loadNotifications() {
-  const res = await fetch('/api/notifications');
+  const res = await fetch(`${API}/api/notifications`,{credentials:'include'});
   const data = await res.json();
   const notes = data.notifications || [];
   const unread = notes.filter(n => !n.read).length;
@@ -461,7 +462,7 @@ function render() {
       const stars=c.difficulty?'★'.repeat(c.difficulty)+'☆'.repeat(5-c.difficulty):'';
       const done=myCompletions.has(c.id||c.link);
       card.innerHTML=`
-        ${c.imgSrc?`<img class="card-img" src="${c.imgSrc}" loading="lazy" onerror="this.outerHTML='<div class=\\'card-img-ph\\'>🍽️</div>'">`:`<div class="card-img-ph">🍽️</div>`}
+        ${c.imgSrc?`<img class="card-img" src="${API}${c.imgSrc}" loading="lazy" onerror="this.outerHTML='<div class=\\'card-img-ph\\'>🍽️</div>'">`:`<div class="card-img-ph">🍽️</div>`}
         <div class="card-body">
           <div class="card-title">${c.title||'Unknown Challenge'}</div>
           <div class="card-where">${c.where||c.address||''}</div>
@@ -508,8 +509,8 @@ function openDetail(c) {
   const extraPhotos=(c.photos||[]).slice(1);
   const done=myCompletions.has(c.id||c.link);
   document.getElementById('detail-content').innerHTML=`
-    ${c.imgSrc?`<div id="detail-hero-wrap"><img id="detail-hero" src="${c.imgSrc}" alt=""></div>`:''}
-    ${extraPhotos.length?`<div class="detail-photos">${extraPhotos.map(p=>`<img src="${p}" onclick="window.open('${p}')">`).join('')}</div>`:''}
+    ${c.imgSrc?`<div id="detail-hero-wrap"><img id="detail-hero" src="${API}${c.imgSrc}" alt=""></div>`:''}
+    ${extraPhotos.length?`<div class="detail-photos">${extraPhotos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:''}
     <div id="detail-body">
       <div id="detail-name">${c.title||'Challenge'}</div>
       <div id="detail-where">${c.where||''} ${c.location?'· '+c.location:''}</div>
@@ -542,7 +543,7 @@ async function doCompletion() {
   fd.append('isJsonChallenge', currentDetail._source==='json'?'true':'false');
   const files=document.getElementById('comp-photos').files;
   for(const f of files) fd.append('photos', f);
-  const res=await fetch('/api/completions',{method:'POST',body:fd});
+  const res=await fetch(`${API}/api/completions`,{method:'POST',body:fd,credentials:'include'});
   const data=await res.json();
   if(!data.ok){document.getElementById('comp-error').textContent=data.error;return;}
   myCompletions.add(currentDetail.id||currentDetail.link);
@@ -571,7 +572,7 @@ async function doSubmit(){
   if(!fd.get('title')||!fd.get('address')){document.getElementById('sub-error').textContent='Title and address are required';return;}
   const files=document.getElementById('sub-photos').files;
   for(const f of files) fd.append('photos',f);
-  const res=await fetch('/api/challenges/submit',{method:'POST',body:fd});
+  const res=await fetch(`${API}/api/challenges/submit`,{method:'POST',body:fd,credentials:'include'});
   const data=await res.json();
   if(!data.ok){document.getElementById('sub-error').textContent=data.error;return;}
   document.getElementById('submit-modal').classList.remove('open');
@@ -599,7 +600,7 @@ function setRole(r){
 async function doLogin(){
   const email=document.getElementById('login-email').value;
   const password=document.getElementById('login-password').value;
-  const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const res=await fetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email,password})});
   const data=await res.json();
   if(!data.ok){document.getElementById('login-error').textContent=data.error;return;}
   currentUser=data.user;updateAccountBtn();closeAuth();
@@ -616,7 +617,7 @@ async function doRegister(){
     businessPhone:document.getElementById('reg-biz-phone').value,
     businessAddress:document.getElementById('reg-biz-address').value,
   };
-  const res=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const res=await fetch(`${API}/api/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});
   const data=await res.json();
   if(!data.ok){document.getElementById('reg-error').textContent=data.error;return;}
   if(data.pending){closeAuth();alert(data.message);return;}
@@ -651,14 +652,14 @@ function showAccountMenu(){
   document.body.appendChild(menu);
 }
 async function doLogout(){
-  await fetch('/api/auth/logout',{method:'POST'});
+  await fetch(`${API}/api/auth/logout`,{method:'POST',credentials:'include'});
   currentUser=null;updateAccountBtn();
   document.getElementById('notif-btn').style.display='none';
   document.querySelectorAll('[style*=fixed]').forEach(e=>e.remove());
   render();
 }
 async function showMyCompletions(){
-  const res=await fetch('/api/completions/me');
+  const res=await fetch(`${API}/api/completions/me`,{credentials:'include'});
   const data=await res.json();
   const completions=data.completions||[];
   const menu=document.createElement('div');
@@ -674,7 +675,7 @@ async function showMyCompletions(){
         ${c.time?`<div style="font-size:12px;color:var(--accent);margin-top:2px">⏱ ${c.time}</div>`:''}
         ${c.notes?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${c.notes}</div>`:''}
         <div style="font-size:11px;color:var(--text2);margin-top:4px">${new Date(c.createdAt).toLocaleDateString()}</div>
-        ${c.photos&&c.photos.length?`<div style="display:flex;gap:4px;margin-top:6px">${c.photos.map(p=>`<img src="${p}" style="width:50px;height:50px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
+        ${c.photos&&c.photos.length?`<div style="display:flex;gap:4px;margin-top:6px">${c.photos.map(p=>`<img src="${API}${p}" style="width:50px;height:50px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
       </div>`).join('')}
   </div>`;
   menu.addEventListener('click',e=>{if(e.target===menu)menu.remove();});
@@ -685,7 +686,7 @@ async function showMyCompletions(){
 document.getElementById('notif-btn').addEventListener('click',async()=>{
   const panel=document.getElementById('notif-panel');
   if(panel.classList.toggle('open')){
-    await fetch('/api/notifications/read',{method:'POST'});
+    await fetch(`${API}/api/notifications/read`,{method:'POST',credentials:'include'});
     document.getElementById('notif-dot').style.display='none';
     loadNotifications();
   }
