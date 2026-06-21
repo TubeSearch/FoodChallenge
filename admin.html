@@ -174,13 +174,14 @@ tr:hover td{background:var(--card-hover)}
 
 <script src="shared.js"></script>
 <script>
+const API = 'https://lavonia-cliquy-daniela.ngrok-free.dev';
 let currentUser = null;
 let allUsers = [], allChallenges = [], allCompletions = [], stats = {};
 let jsonChallenges = [];
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
-  const res = await fetch('/api/auth/me');
+  const res = await fetch(`${API}/api/auth/me`,{credentials:'include'});
   const data = await res.json();
   if (!data.user || data.user.role !== 'admin') {
     document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:-apple-system,sans-serif">
@@ -200,7 +201,7 @@ async function init() {
 
 async function refreshAll() {
   const [usersRes, challengesRes, completionsRes, statsRes] = await Promise.all([
-    fetch('/api/users'), fetch('/api/challenges'), fetch('/api/completions/all'), fetch('/api/stats')
+    fetch(`${API}/api/users`,{credentials:'include'}), fetch(`${API}/api/challenges`,{credentials:'include'}), fetch(`${API}/api/completions/all`,{credentials:'include'}), fetch(`${API}/api/stats`,{credentials:'include'})
   ]);
   allUsers = (await usersRes.json()).users || [];
   allChallenges = (await challengesRes.json()).challenges || [];
@@ -208,7 +209,7 @@ async function refreshAll() {
   stats = (await statsRes.json()).stats || {};
 
   // Load pending separately
-  const pendingRes = await fetch('/api/challenges/pending');
+  const pendingRes = await fetch(`${API}/api/challenges/pending`,{credentials:'include'});
   const pendingData = await pendingRes.json();
   const pending = pendingData.challenges || [];
 
@@ -229,7 +230,7 @@ async function refreshAll() {
 }
 
 async function doLogout() {
-  await fetch('/api/auth/logout', { method:'POST' });
+  await fetch(`${API}/api/auth/logout`, { method:'POST', credentials:'include' });
   window.location.href = '/';
 }
 
@@ -334,7 +335,7 @@ function mapPage() {
 
 // ── Pending page ──────────────────────────────────────────────────────────────
 async function pendingPage(actions) {
-  const res = await fetch('/api/challenges/pending');
+  const res = await fetch(`${API}/api/challenges/pending`,{credentials:'include'});
   const data = await res.json();
   const pending = data.challenges || [];
   const c = document.getElementById('content');
@@ -351,7 +352,7 @@ async function pendingPage(actions) {
     ${pending.map(ch => `
     <div style="padding:16px;border-bottom:1px solid var(--border)">
       <div style="display:flex;gap:12px;align-items:flex-start">
-        ${ch.imgSrc?`<img src="${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center;font-size:20px">🍽️</div>'}
+        ${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center;font-size:20px">🍽️</div>'}
         <div style="flex:1;min-width:0">
           <div style="font-size:15px;font-weight:700;margin-bottom:2px">${escHtml(ch.title)}</div>
           <div style="font-size:12px;color:var(--text2);margin-bottom:6px">${escHtml(ch.where||'')} · ${escHtml(ch.address||'')} · Submitted by <strong>${escHtml(ch.submittedByUsername)}</strong> ${timeAgo(ch.createdAt)}</div>
@@ -359,7 +360,7 @@ async function pendingPage(actions) {
           ${ch.website?`<div style="font-size:12px"><a href="${escHtml(ch.website)}" target="_blank" rel="noopener" style="color:var(--accent)">🌐 Visit website</a></div>`:''}
           ${ch.price||ch.weight||ch.timeLimit?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${[ch.price,ch.weight,ch.timeLimit].filter(Boolean).join(' · ')}</div>`:''}
           ${ch.description?`<div style="font-size:13px;margin-top:8px;line-height:1.5;color:var(--text2)">${escHtml(ch.description).substring(0,300)}${ch.description.length>300?'…':''}</div>`:''}
-          ${ch.photos&&ch.photos.length?`<div class="photo-strip" style="margin-top:8px">${ch.photos.map(p=>`<img src="${p}" onclick="window.open('${p}')">`).join('')}</div>`:''}
+          ${ch.photos&&ch.photos.length?`<div class="photo-strip" style="margin-top:8px">${ch.photos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:''}
         </div>
       </div>
       <div class="td-actions" style="margin-top:12px">
@@ -388,7 +389,7 @@ function challengesPage(actions) {
 function renderChallengeRows(list) {
   if (!list.length) return `<tr><td colspan="8"><div class="empty-table"><div class="icon">🍽️</div><p>No challenges</p></div></td></tr>`;
   return list.map(ch=>`<tr>
-    <td>${ch.imgSrc?`<img src="${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
+    <td>${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
     <td><div class="truncate" style="max-width:180px;font-weight:600">${escHtml(ch.title)}</div></td>
     <td><div class="truncate">${escHtml(ch.address||'')}</div></td>
     <td><span class="tag tag-${ch.status}">${ch.status}</span></td>
@@ -515,7 +516,7 @@ function renderCompRows(list) {
     <td class="truncate">${escHtml(cp.challengeTitle||cp.challengeId)}</td>
     <td>${escHtml(cp.time||'—')}</td>
     <td><div class="truncate">${escHtml(cp.notes||'—')}</div></td>
-    <td>${cp.photos&&cp.photos.length?`<div class="photo-strip">${cp.photos.map(p=>`<img src="${p}" onclick="window.open('${p}')">`).join('')}</div>`:'—'}</td>
+    <td>${cp.photos&&cp.photos.length?`<div class="photo-strip">${cp.photos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:'—'}</td>
     <td>${fmtDate(cp.createdAt)}</td>
     <td><button class="act-btn act-delete" onclick="deleteCompletion('${cp.id}')">Delete</button></td>
   </tr>`).join('');
@@ -562,7 +563,7 @@ function businessChallengesPage() {
       <thead><tr><th>Image</th><th>Title</th><th>Business</th><th>Address</th><th>Verification</th><th>Completions</th><th>Actions</th></tr></thead>
       <tbody>${bizChallenges.length===0?`<tr><td colspan="7"><div class="empty-table"><div class="icon">📋</div><p>No business challenges</p></div></td></tr>`:
       bizChallenges.map(ch=>`<tr>
-        <td>${ch.imgSrc?`<img src="${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
+        <td>${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
         <td><div class="truncate" style="font-weight:600">${escHtml(ch.title)}</div></td>
         <td>${escHtml(ch.submittedByUsername||'')}</td>
         <td class="truncate">${escHtml(ch.address||'')}</td>
@@ -580,8 +581,8 @@ function businessChallengesPage() {
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 async function reviewChallenge(id, action, reason) {
-  const res = await fetch(`/api/challenges/${id}/review`, {
-    method:'POST', headers:{'Content-Type':'application/json'},
+  const res = await fetch(`${API}/api/challenges/${id}/review`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include',
     body: JSON.stringify({ action, reason })
   });
   const data = await res.json();
@@ -605,27 +606,27 @@ function promptReject(id) {
 
 async function deleteChallenge(id) {
   if (!confirm('Delete this challenge permanently?')) return;
-  const res = await fetch(`/api/challenges/${id}`, { method:'DELETE' });
+  const res = await fetch(`${API}/api/challenges/${id}`, { method:'DELETE', credentials:'include' });
   if (!(await res.json()).ok) { alert('Error deleting'); return; }
   await refreshAll(); showPage('challenges');
 }
 
 async function approveUser(id) {
-  const res = await fetch(`/api/users/${id}/approve`, { method:'POST' });
+  const res = await fetch(`${API}/api/users/${id}/approve`, { method:'POST', credentials:'include' });
   if (!(await res.json()).ok) { alert('Error approving'); return; }
   await refreshAll(); showPage('users');
 }
 
 async function deleteUser(id) {
   if (!confirm('Delete this user? This cannot be undone.')) return;
-  const res = await fetch(`/api/users/${id}`, { method:'DELETE' });
+  const res = await fetch(`${API}/api/users/${id}`, { method:'DELETE', credentials:'include' });
   if (!(await res.json()).ok) { alert('Error deleting'); return; }
   await refreshAll(); showPage('users');
 }
 
 async function deleteCompletion(id) {
   if (!confirm('Delete this completion?')) return;
-  const res = await fetch(`/api/completions/${id}`, { method:'DELETE' });
+  const res = await fetch(`${API}/api/completions/${id}`, { method:'DELETE', credentials:'include' });
   if (!(await res.json()).ok) { alert('Error'); return; }
   await refreshAll(); showPage('completions');
 }
@@ -679,7 +680,7 @@ function openChallengeModal(id) {
       <div class="modal-label">Add Photos</div>
       <input type="file" id="edit-photos" accept="image/*" multiple style="font-size:13px;color:var(--text2)">
     </div>
-    ${ch.photos&&ch.photos.length?`<div class="modal-section"><div class="modal-label">Current Photos</div><div class="photo-strip">${ch.photos.map(p=>`<img src="${p}" onclick="window.open('${p}')">`).join('')}</div></div>`:''}
+    ${ch.photos&&ch.photos.length?`<div class="modal-section"><div class="modal-label">Current Photos</div><div class="photo-strip">${ch.photos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div></div>`:''}
     <div class="modal-section"><div class="modal-label">Description</div><textarea class="fc-input" id="edit-desc" rows="4">${escHtml(ch.description||'')}</textarea></div>
     <div id="edit-error" class="form-error"></div>
   `, [
@@ -700,7 +701,7 @@ async function saveChallengeEdit(id) {
   }
   const files=document.getElementById('edit-photos')?.files||[];
   for(const f of files) fd.append('photos',f);
-  const res=await fetch(`/api/challenges/${id}`,{method:'PATCH',body:fd});
+  const res=await fetch(`${API}/api/challenges/${id}`,{method:'PATCH',body:fd,credentials:'include'});
   const data=await res.json();
   if(!data.ok){document.getElementById('edit-error').textContent=data.error;return;}
   closeModal();await refreshAll();showPage('challenges');
@@ -751,7 +752,7 @@ async function saveUserEdit(id) {
   };
   const pw = document.getElementById('edit-user-pw').value;
   if (pw) body.password = pw;
-  const res = await fetch(`/api/users/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const res = await fetch(`${API}/api/users/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify(body) });
   const data = await res.json();
   if (!data.ok) { document.getElementById('edit-user-error').textContent=data.error; return; }
   closeModal(); await refreshAll(); showPage('users');
