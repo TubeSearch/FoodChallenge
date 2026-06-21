@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "id": "17112018-6688-4c6b-8da9-6b3b96ce5b31",
+      "username": "Admin",
+      "email": "lucidesystem@gmail.com",
+      "password": "$2b$12$gtKkOehz2L3cf5AuiCt09uQxH7lPABE2tNlja.8p.oCoyUxxK6mWG",
+      "role": "admin",
+      "businessName": null,
+      "businessPhone": null,
+      "businessAddress": null,
+      "approved": true,
+      "createdAt": 1781986118859,
+      "completions": []
+    }
+  ],
+  "challenges": [],
+  "completions": [],
+  "notifications": []
+}

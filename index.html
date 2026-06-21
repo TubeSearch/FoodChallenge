@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Food Challenges</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="shared.css">
+<style>
+#map{position:absolute;inset:0;z-index:0}
+#top-bar{position:absolute;top:max(env(safe-area-inset-top),12px);left:0;right:0;z-index:100;display:flex;align-items:center;gap:8px;padding:0 12px;pointer-events:none}
+#search-pill{background:var(--pill-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-radius:50px;padding:10px 16px;display:flex;align-items:center;gap:9px;box-shadow:var(--shadow);pointer-events:all;flex:1;min-width:0}
+#search-pill svg{flex-shrink:0;color:var(--text2)}
+#search-input{border:none;background:transparent;font-size:15px;color:var(--text);outline:none;width:100%;font-family:inherit}
+#search-input::placeholder{color:var(--text2)}
+#count-badge{background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:5px 10px;border-radius:50px;pointer-events:none;white-space:nowrap;box-shadow:var(--shadow);flex-shrink:0}
+.top-icon-btn{width:38px;height:38px;border-radius:50%;background:var(--pill-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);color:var(--text2);flex-shrink:0;pointer-events:all;position:relative}
+.top-icon-btn:active{opacity:.7}
+.notif-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;background:#ff3b30;border-radius:50%;border:2px solid var(--pill-bg);display:none}
+
+#map-btns{position:absolute;right:14px;z-index:100;display:flex;flex-direction:column;gap:10px;transition:bottom .35s cubic-bezier(.32,.72,0,1)}
+.map-btn{width:42px;height:42px;border-radius:50%;background:var(--pill-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);color:var(--accent);transition:transform .15s}
+.map-btn:active{transform:scale(.92)}
+#dev-click-hint{display:none;position:absolute;bottom:0;left:0;right:0;z-index:150;padding:10px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;text-align:center}
+
+#sheet{position:absolute;left:0;right:0;bottom:0;z-index:200;background:var(--sheet-bg);backdrop-filter:blur(30px) saturate(200%);-webkit-backdrop-filter:blur(30px) saturate(200%);border-radius:var(--rlg) var(--rlg) 0 0;box-shadow:var(--shadow-heavy);touch-action:none}
+#sheet-handle-area{padding:10px 0 2px;display:flex;justify-content:center;cursor:grab;user-select:none}
+#sheet-handle-area:active{cursor:grabbing}
+#sheet-handle{width:36px;height:5px;background:var(--handle);border-radius:3px}
+#radius-section{padding:4px 18px 14px;border-bottom:1px solid var(--border)}
+#radius-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+#radius-label{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+#radius-value{font-size:15px;font-weight:700;color:var(--accent)}
+#radius-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) 0%,var(--accent) var(--pct,12%),var(--badge-bg) var(--pct,12%),var(--badge-bg) 100%);outline:none;cursor:pointer}
+#radius-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--surface);border:2px solid var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:pointer}
+#radius-slider::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--surface);border:2px solid var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:pointer}
+#results-header{padding:12px 18px 6px;display:flex;align-items:baseline;gap:8px}
+#results-title{font-size:17px;font-weight:700;flex:1}
+.hdr-btn{background:var(--badge-bg);border:none;border-radius:8px;padding:4px 10px;font-size:12px;color:var(--text2);cursor:pointer;font-family:inherit;font-weight:500}
+#results-list{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.challenge-card{display:flex;align-items:flex-start;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+.challenge-card:active,.challenge-card:hover{background:var(--card-hover)}
+.card-img{width:56px;height:56px;border-radius:var(--rsm);object-fit:cover;background:var(--badge-bg);flex-shrink:0}
+.card-img-ph{width:56px;height:56px;border-radius:var(--rsm);background:var(--badge-bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px}
+.card-body{flex:1;min-width:0}
+.card-title{font-size:14px;font-weight:600;line-height:1.3;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-where{font-size:12px;color:var(--text2);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-meta{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.card-dist{font-size:12px;color:var(--accent);font-weight:600;flex-shrink:0;margin-top:2px}
+.card-chevron{color:var(--text2);opacity:.4;font-size:18px;align-self:center;flex-shrink:0;margin-left:2px}
+#empty-state{display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;color:var(--text2);gap:10px;text-align:center}
+#empty-state .icon{font-size:40px}
+#empty-state .msg{font-size:15px;font-weight:500}
+#empty-state .sub{font-size:13px}
+#loading-state{display:flex;flex-direction:column;align-items:center;padding:30px;gap:12px;color:var(--text2);font-size:14px}
+
+/* Detail panel */
+#detail-panel{position:absolute;inset:0;z-index:300;background:var(--sheet-bg);backdrop-filter:blur(30px) saturate(200%);-webkit-backdrop-filter:blur(30px) saturate(200%);transform:translateX(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);overflow-y:auto;-webkit-overflow-scrolling:touch}
+#detail-panel.open{transform:translateX(0)}
+#detail-header{position:sticky;top:0;background:var(--sheet-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:max(env(safe-area-inset-top),12px) 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);z-index:1}
+#back-btn{background:var(--badge-bg);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--accent);flex-shrink:0}
+#back-btn:active{opacity:.6}
+#detail-title-hdr{font-size:16px;font-weight:700;flex:1;line-height:1.2}
+#detail-hero-wrap{position:relative}
+#detail-hero{width:100%;height:200px;object-fit:cover;background:var(--badge-bg);display:block}
+.detail-photos{display:flex;gap:6px;padding:10px 16px 0;overflow-x:auto;scrollbar-width:none}
+.detail-photos::-webkit-scrollbar{display:none}
+.detail-photos img{height:80px;width:80px;object-fit:cover;border-radius:8px;flex-shrink:0;cursor:pointer}
+#detail-body{padding:16px}
+#detail-name{font-size:20px;font-weight:800;line-height:1.2;margin-bottom:6px}
+#detail-where{font-size:14px;color:var(--text2);margin-bottom:10px}
+#detail-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.detail-section{background:var(--surface2);border-radius:var(--rmd);overflow:hidden;margin-bottom:14px}
+.detail-row{display:flex;align-items:center;padding:12px 14px;gap:12px;border-bottom:1px solid var(--border)}
+.detail-row:last-child{border-bottom:none}
+.detail-icon{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.detail-key{font-size:13px;color:var(--text2);flex:1}
+.detail-val{font-size:14px;font-weight:600;text-align:right;max-width:60%;word-break:break-word}
+.detail-val a{color:var(--accent);text-decoration:none}
+#detail-desc{background:var(--surface2);border-radius:var(--rmd);padding:14px;font-size:14px;line-height:1.6;margin-bottom:14px;white-space:pre-line}
+#detail-open-btn{display:block;background:var(--accent);color:#fff;text-align:center;padding:14px;border-radius:var(--rmd);font-size:15px;font-weight:700;text-decoration:none;margin:0 16px 10px}
+#detail-open-btn:active{opacity:.8}
+#complete-btn{display:block;background:var(--surface2);color:var(--text);text-align:center;padding:13px;border-radius:var(--rmd);font-size:15px;font-weight:600;border:none;cursor:pointer;width:calc(100% - 32px);margin:0 16px 32px;font-family:inherit}
+#complete-btn.done{background:var(--success-light);color:var(--success)}
+
+/* Auth modal */
+#auth-modal{position:absolute;inset:0;z-index:500;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center}
+#auth-modal.open{display:flex}
+#auth-sheet{background:var(--sheet-bg);border-radius:var(--rlg) var(--rlg) 0 0;width:100%;max-width:480px;padding:24px 20px max(env(safe-area-inset-bottom),24px);max-height:90vh;overflow-y:auto}
+#auth-tabs{display:flex;gap:0;background:var(--badge-bg);border-radius:10px;padding:2px;margin-bottom:20px}
+.auth-tab{flex:1;padding:8px;text-align:center;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:inherit}
+.auth-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.auth-form{display:none;flex-direction:column;gap:12px}
+.auth-form.active{display:flex}
+.business-fields{display:none;flex-direction:column;gap:12px}
+.business-fields.show{display:flex}
+
+/* Submit modal */
+#submit-modal{position:absolute;inset:0;z-index:500;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center}
+#submit-modal.open{display:flex}
+#submit-sheet{background:var(--sheet-bg);border-radius:var(--rlg) var(--rlg) 0 0;width:100%;max-width:480px;padding:24px 20px max(env(safe-area-inset-bottom),24px);max-height:90vh;overflow-y:auto}
+
+/* Completion modal */
+#completion-modal{position:absolute;inset:0;z-index:500;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center}
+#completion-modal.open{display:flex}
+#completion-sheet{background:var(--sheet-bg);border-radius:var(--rlg) var(--rlg) 0 0;width:100%;max-width:480px;padding:24px 20px max(env(safe-area-inset-bottom),24px);max-height:90vh;overflow-y:auto}
+
+/* Notification panel */
+#notif-panel{position:absolute;top:max(env(safe-area-inset-top),12px);right:0;width:min(340px,95vw);z-index:400;background:var(--sheet-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:var(--rmd);box-shadow:var(--shadow-heavy);margin:50px 8px 0;max-height:60vh;overflow-y:auto;display:none}
+#notif-panel.open{display:block}
+#notif-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+#notif-header h3{font-size:15px;font-weight:700}
+.notif-item{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;line-height:1.4}
+.notif-item.unread{background:var(--accent-light)}
+.notif-time{font-size:11px;color:var(--text2);margin-top:3px}
+
+/* Leaflet */
+.leaflet-control-zoom{display:none}
+.leaflet-control-attribution{font-size:9px!important}
+@media(prefers-color-scheme:dark){
+  .leaflet-control-attribution{background:rgba(28,28,30,.8)!important;color:#8e8e93!important}
+  .leaflet-control-attribution a{color:#0a84ff!important}
+}
+.leaflet-popup-content-wrapper{background:var(--pill-bg)!important;color:var(--text)!important;border-radius:14px!important;box-shadow:var(--shadow)!important;font-family:-apple-system,BlinkMacSystemFont,sans-serif!important}
+.leaflet-popup-tip{background:var(--pill-bg)!important}
+.leaflet-popup-content{margin:10px 14px!important;font-size:13px}
+.popup-title{font-weight:700;margin-bottom:2px;font-size:14px}
+.popup-sub{color:var(--text2);margin-bottom:4px}
+.popup-dist{color:var(--accent);font-size:12px;font-weight:600;margin-bottom:6px}
+.popup-open{color:var(--accent);font-weight:600;cursor:pointer;font-size:13px}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<!-- Top bar -->
+<div id="top-bar">
+  <div id="search-pill">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="search-input" type="text" placeholder="Search challenges…" autocomplete="off" autocorrect="off" spellcheck="false">
+  </div>
+  <div id="count-badge">—</div>
+  <button class="top-icon-btn" id="notif-btn" title="Notifications" style="display:none">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    <div class="notif-dot" id="notif-dot"></div>
+  </button>
+  <button class="top-icon-btn" id="account-btn" title="Account">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+  </button>
+</div>
+
+<!-- Notifications panel -->
+<div id="notif-panel">
+  <div id="notif-header"><h3>Notifications</h3><button class="icon-btn" id="close-notif" style="background:var(--badge-bg);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>
+  <div id="notif-list"><div style="padding:20px;text-align:center;color:var(--text2);font-size:14px">No notifications</div></div>
+</div>
+
+<!-- Map btns -->
+<div id="map-btns">
+  <button class="map-btn" id="locate-btn" title="My location">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+  </button>
+  <button class="map-btn" id="submit-map-btn" title="Submit a challenge" style="background:var(--accent);color:#fff">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+<div id="dev-click-hint">📍 Click map to set location — press Esc to cancel</div>
+
+<!-- Bottom sheet -->
+<div id="sheet">
+  <div id="sheet-handle-area"><div id="sheet-handle"></div></div>
+  <div id="radius-section">
+    <div id="radius-row"><span id="radius-label">Search Radius</span><span id="radius-value">25 mi</span></div>
+    <input id="radius-slider" type="range" min="1" max="500" value="25" step="1">
+  </div>
+  <div id="results-header">
+    <span id="results-title">Nearby Challenges</span>
+    <button class="hdr-btn" id="filter-btn">Filter ▾</button>
+    <button class="hdr-btn" id="sort-btn">Distance ▾</button>
+  </div>
+  <div id="results-list">
+    <div id="loading-state"><div class="spinner"></div><span>Loading…</span></div>
+    <div id="empty-state"><div class="icon">🍽️</div><div class="msg">No challenges found</div><div class="sub">Try expanding the search radius</div></div>
+  </div>
+</div>
+
+<!-- Detail panel -->
+<div id="detail-panel">
+  <div id="detail-header">
+    <button id="back-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div id="detail-title-hdr">Challenge Details</div>
+  </div>
+  <div id="detail-content"></div>
+</div>
+
+<!-- Auth modal -->
+<div id="auth-modal">
+  <div id="auth-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="font-size:20px;font-weight:800">Welcome</h2>
+      <button onclick="closeAuth()" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--text2)">✕</button>
+    </div>
+    <div id="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchTab('register')">Register</button>
+    </div>
+    <!-- Login -->
+    <div class="auth-form active" id="login-form">
+      <input class="fc-input" id="login-email" type="email" placeholder="Email">
+      <input class="fc-input" id="login-password" type="password" placeholder="Password">
+      <div id="login-error" class="form-error"></div>
+      <button class="fc-btn" onclick="doLogin()">Sign In</button>
+    </div>
+    <!-- Register -->
+    <div class="auth-form" id="register-form">
+      <input class="fc-input" id="reg-username" type="text" placeholder="Username">
+      <input class="fc-input" id="reg-email" type="email" placeholder="Email">
+      <input class="fc-input" id="reg-password" type="password" placeholder="Password (min 6 chars)">
+      <div style="display:flex;gap:0;background:var(--badge-bg);border-radius:10px;padding:2px">
+        <button class="auth-tab active" id="role-user-btn" onclick="setRole('user')" style="flex:1">Regular User</button>
+        <button class="auth-tab" id="role-biz-btn" onclick="setRole('business')" style="flex:1">Business</button>
+      </div>
+      <div class="business-fields" id="biz-fields">
+        <input class="fc-input" id="reg-biz-name" type="text" placeholder="Business Name">
+        <input class="fc-input" id="reg-biz-phone" type="tel" placeholder="Phone (we'll call to verify)">
+        <input class="fc-input" id="reg-biz-address" type="text" placeholder="Business Address">
+        <div style="font-size:12px;color:var(--text2);padding:4px">Business accounts require phone verification. We'll call you to approve.</div>
+      </div>
+      <div id="reg-error" class="form-error"></div>
+      <button class="fc-btn" onclick="doRegister()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- Submit Challenge modal -->
+<div id="submit-modal">
+  <div id="submit-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="font-size:20px;font-weight:800">Submit a Challenge</h2>
+      <button onclick="document.getElementById('submit-modal').classList.remove('open')" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--text2)">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px" id="submit-form">
+      <input class="fc-input" id="sub-title" type="text" placeholder="Challenge Name *">
+      <input class="fc-input" id="sub-where" type="text" placeholder="Restaurant Name">
+      <input class="fc-input" id="sub-address" type="text" placeholder="Address *">
+      <input class="fc-input" id="sub-phone" type="tel" placeholder="Restaurant Phone">
+      <input class="fc-input" id="sub-website" type="url" placeholder="Website / Social">
+      <div style="display:flex;gap:8px">
+        <input class="fc-input" id="sub-price" type="text" placeholder="Price (e.g. $25)" style="flex:1">
+        <input class="fc-input" id="sub-weight" type="text" placeholder="Weight (e.g. 4lbs)" style="flex:1">
+      </div>
+      <div style="display:flex;gap:8px">
+        <input class="fc-input" id="sub-time" type="text" placeholder="Time Limit" style="flex:1">
+        <select class="fc-input" id="sub-type" style="flex:1">
+          <option value="">Type…</option>
+          <option>Burger</option><option>Pizza</option><option>Steak</option><option>Wing</option>
+          <option>Burrito</option><option>Sandwich</option><option>Pasta</option><option>Seafood</option>
+          <option>Breakfast</option><option>Dessert</option><option>BBQ</option><option>Spicy</option>
+          <option>Team</option><option>Other</option>
+        </select>
+      </div>
+      <textarea class="fc-input" id="sub-desc" placeholder="Challenge description, prizes, rules…" rows="4" style="resize:vertical"></textarea>
+      <div style="font-size:13px;color:var(--text2);font-weight:600">Location (click map or enter coords)</div>
+      <div style="display:flex;gap:8px">
+        <input class="fc-input" id="sub-lat" type="number" step="any" placeholder="Latitude" style="flex:1">
+        <input class="fc-input" id="sub-lng" type="number" step="any" placeholder="Longitude" style="flex:1">
+      </div>
+      <button class="fc-btn" style="background:var(--surface2);color:var(--text)" onclick="startSubmitLocPick()">📍 Pick Location on Map</button>
+      <div style="font-size:13px;color:var(--text2);font-weight:600">Photos (up to 6)</div>
+      <input type="file" id="sub-photos" accept="image/*" multiple style="font-size:13px;color:var(--text2)">
+      <div id="sub-error" class="form-error"></div>
+      <button class="fc-btn" onclick="doSubmit()">Submit Challenge</button>
+      <div style="font-size:12px;color:var(--text2);text-align:center">Submissions appear on the map immediately with an "Unverified" badge. An admin will review your submission.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Completion modal -->
+<div id="completion-modal">
+  <div id="completion-sheet">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="font-size:20px;font-weight:800">Log Completion 🏆</h2>
+      <button onclick="document.getElementById('completion-modal').classList.remove('open')" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--text2)">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div id="completion-challenge-name" style="font-size:15px;font-weight:700;color:var(--accent)"></div>
+      <input class="fc-input" id="comp-time" type="text" placeholder="Your time (e.g. 23:45)">
+      <textarea class="fc-input" id="comp-notes" placeholder="Notes, how it went, tips for others…" rows="3" style="resize:vertical"></textarea>
+      <div style="font-size:13px;color:var(--text2);font-weight:600">Proof photos (optional)</div>
+      <input type="file" id="comp-photos" accept="image/*" multiple style="font-size:13px;color:var(--text2)">
+      <div id="comp-error" class="form-error"></div>
+      <button class="fc-btn" onclick="doCompletion()">Save Completion</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+const DARK = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const TILE_ATTR  = '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>';
+
+let allChallenges = [], userLat = null, userLng = null;
+let radiusMiles = 25, searchQuery = '', sortMode = 'distance', filterType = '';
+let markerLayer, radiusCircle = null, userMarker = null;
+let clickingMap = false, clickingForSubmit = false;
+let currentDetail = null, currentUser = null, myCompletions = new Set();
+
+const map = L.map('map', { zoomControl:false }).setView([39.5,-98.35], 4);
+L.tileLayer(DARK ? TILE_DARK : TILE_LIGHT, { attribution:TILE_ATTR, maxZoom:19, subdomains:'abcd' }).addTo(map);
+markerLayer = L.layerGroup().addTo(map);
+
+map.on('click', e => {
+  if (clickingForSubmit) {
+    document.getElementById('sub-lat').value = e.latlng.lat.toFixed(6);
+    document.getElementById('sub-lng').value = e.latlng.lng.toFixed(6);
+    stopClickMap();
+    document.getElementById('submit-modal').classList.add('open');
+    return;
+  }
+  if (clickingMap) { stopClickMap(); setUserLocation(e.latlng.lat, e.latlng.lng); }
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') stopClickMap(); });
+
+// ── Load ─────────────────────────────────────────────────────────────────────
+async function loadAll() {
+  try {
+    // JSON file challenges (bulk, pre-verified)
+    const jsonRes = await fetch('data/foodchallenges.json');
+    const jsonData = await jsonRes.json();
+    const jsonChallenges = jsonData.map(c => ({
+      ...c, _source: 'json', verificationStatus: c.verificationStatus || 'admin_verified'
+    }));
+
+    // DB challenges (community submitted + business)
+    const dbRes = await fetch('/api/challenges');
+    const dbData = await dbRes.json();
+    const dbChallenges = dbData.challenges || [];
+
+    // Deduplicate by link
+    const seen = new Set();
+    allChallenges = [...jsonChallenges, ...dbChallenges].filter(c => {
+      const key = c.link || c.id || (c.title + c.address);
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+
+    document.getElementById('loading-state').style.display = 'none';
+    tryGeolocate();
+    render();
+  } catch(e) {
+    document.getElementById('loading-state').innerHTML = `<div style="color:var(--text2);padding:20px;text-align:center;font-size:14px">⚠️ ${e.message}</div>`;
+  }
+}
+
+async function initAuth() {
+  const res = await fetch('/api/auth/me');
+  const data = await res.json();
+  currentUser = data.user;
+  updateAccountBtn();
+  if (currentUser) {
+    document.getElementById('notif-btn').style.display = 'flex';
+    loadNotifications();
+    loadMyCompletions();
+  }
+}
+
+async function loadMyCompletions() {
+  if (!currentUser) return;
+  const res = await fetch('/api/completions/me');
+  const data = await res.json();
+  myCompletions = new Set((data.completions || []).map(c => c.challengeId));
+}
+
+async function loadNotifications() {
+  const res = await fetch('/api/notifications');
+  const data = await res.json();
+  const notes = data.notifications || [];
+  const unread = notes.filter(n => !n.read).length;
+  document.getElementById('notif-dot').style.display = unread > 0 ? 'block' : 'none';
+  const list = document.getElementById('notif-list');
+  list.innerHTML = notes.length === 0
+    ? '<div style="padding:20px;text-align:center;color:var(--text2);font-size:14px">No notifications</div>'
+    : notes.map(n => `
+      <div class="notif-item ${n.read?'':'unread'}">
+        <div>${n.message}</div>
+        <div class="notif-time">${timeAgo(n.createdAt)}</div>
+      </div>`).join('');
+}
+
+// ── Geo ───────────────────────────────────────────────────────────────────────
+function tryGeolocate() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(p => setUserLocation(p.coords.latitude, p.coords.longitude), ()=>{}, { enableHighAccuracy:true, timeout:8000 });
+}
+function setUserLocation(lat, lng) {
+  userLat=lat; userLng=lng;
+  if (userMarker) map.removeLayer(userMarker);
+  userMarker = L.circleMarker([lat,lng],{radius:9,fillColor:'#007aff',fillOpacity:1,color:'#fff',weight:3}).addTo(map);
+  map.setView([lat,lng],10,{animate:true});
+  render();
+}
+document.getElementById('locate-btn').addEventListener('click', () => {
+  navigator.geolocation.getCurrentPosition(p => setUserLocation(p.coords.latitude,p.coords.longitude), ()=>alert('Could not get location'), {enableHighAccuracy:true,timeout:10000});
+});
+
+// ── Distance ──────────────────────────────────────────────────────────────────
+function distMi(la1,ln1,la2,ln2) {
+  const R=3958.8,dLa=(la2-la1)*Math.PI/180,dLn=(ln2-ln1)*Math.PI/180;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLn/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  markerLayer.clearLayers();
+  if (radiusCircle){map.removeLayer(radiusCircle);radiusCircle=null;}
+  const q=searchQuery.toLowerCase();
+  let filtered=allChallenges.filter(c=>{
+    if(!c.lat||!c.lng)return false;
+    if(filterType && c.type!==filterType)return false;
+    if(q&&![c.title,c.where,c.address,c.type].some(f=>f?.toLowerCase().includes(q)))return false;
+    if(userLat!==null){c._dist=distMi(userLat,userLng,c.lat,c.lng);return c._dist<=radiusMiles;}
+    c._dist=null;return true;
+  });
+  if(sortMode==='distance'&&userLat!==null) filtered.sort((a,b)=>a._dist-b._dist);
+  else if(sortMode==='rating') filtered.sort((a,b)=>(b.difficulty||0)-(a.difficulty||0));
+
+  if(userLat!==null){
+    radiusCircle=L.circle([userLat,userLng],{radius:radiusMiles*1609.34,color:'#007aff',fillColor:'#007aff',fillOpacity:DARK?.07:.06,weight:2,dashArray:'6 4'}).addTo(map);
+  }
+
+  const ac=DARK?'#0a84ff':'#007aff';
+  filtered.forEach(c=>{
+    const isVerified = c.verificationStatus==='admin_verified'||c.verificationStatus==='verified';
+    const cm=L.circleMarker([c.lat,c.lng],{
+      radius:7, fillColor:isVerified?ac:'#ff9500', fillOpacity:.9, color:'#fff', weight:2
+    });
+    cm.bindPopup(()=>{
+      const d=document.createElement('div');
+      d.innerHTML=`<div class="popup-title">${c.title||'Challenge'}</div><div class="popup-sub">${c.where||''}</div>${c._dist!=null?`<div class="popup-dist">${c._dist.toFixed(1)} mi away</div>`:''}${verificationBadgeHtml(c.verificationStatus)}`;
+      const btn=document.createElement('div');btn.className='popup-open';btn.textContent='View Details →';
+      btn.onclick=()=>{map.closePopup();openDetail(c);};d.appendChild(btn);return d;
+    });
+    markerLayer.addLayer(cm);
+  });
+
+  document.getElementById('count-badge').textContent=`${filtered.length} found`;
+  const list=document.getElementById('results-list');
+  const empty=document.getElementById('empty-state');
+  list.querySelectorAll('.challenge-card').forEach(e=>e.remove());
+  if(filtered.length===0){empty.style.display='flex';}
+  else{
+    empty.style.display='none';
+    const frag=document.createDocumentFragment();
+    filtered.forEach(c=>{
+      const card=document.createElement('div');card.className='challenge-card';
+      const stars=c.difficulty?'★'.repeat(c.difficulty)+'☆'.repeat(5-c.difficulty):'';
+      const done=myCompletions.has(c.id||c.link);
+      card.innerHTML=`
+        ${c.imgSrc?`<img class="card-img" src="${c.imgSrc}" loading="lazy" onerror="this.outerHTML='<div class=\\'card-img-ph\\'>🍽️</div>'">`:`<div class="card-img-ph">🍽️</div>`}
+        <div class="card-body">
+          <div class="card-title">${c.title||'Unknown Challenge'}</div>
+          <div class="card-where">${c.where||c.address||''}</div>
+          <div class="card-meta">
+            ${verificationBadgeHtml(c.verificationStatus)}
+            ${stars?`<span class="stars">${stars}</span>`:''}
+            ${c.type?`<span class="badge">${c.type}</span>`:''}
+            ${c.price?`<span class="badge badge-accent">${c.price}</span>`:''}
+            ${done?`<span class="badge" style="background:#e5ffe8;color:#34c759">✓ Done</span>`:''}
+          </div>
+        </div>
+        ${c._dist!=null?`<div class="card-dist">${c._dist.toFixed(1)} mi</div>`:''}
+        <div class="card-chevron">›</div>`;
+      card.addEventListener('click',()=>{if(c.lat&&c.lng)map.setView([c.lat,c.lng],14,{animate:true});openDetail(c);});
+      frag.appendChild(card);
+    });
+    list.appendChild(frag);
+  }
+}
+
+function verificationBadgeHtml(status) {
+  if(status==='admin_verified') return `<span class="badge" style="background:#e5f0ff;color:#007aff">✓ Verified</span>`;
+  if(status==='verified') return `<span class="badge" style="background:#e5ffe8;color:#34c759">✓ Verified</span>`;
+  if(status==='business_submitted') return `<span class="badge" style="background:#fff3e0;color:#ff9500">🏪 Business</span>`;
+  return `<span class="badge" style="background:#f5e5ff;color:#af52de">👤 Unverified</span>`;
+}
+
+// ── Detail ────────────────────────────────────────────────────────────────────
+function openDetail(c) {
+  currentDetail=c;
+  document.getElementById('detail-title-hdr').textContent=c.where||'Details';
+  const stars=c.difficulty?'★'.repeat(c.difficulty)+'☆'.repeat(5-c.difficulty):null;
+  const rows=[
+    c.address  &&['📍','Address',c.address],
+    c.phone    &&['📞','Phone',`<a href="tel:${c.phone}">${c.phone}</a>`],
+    c.website  &&['🌐','Website',`<a href="${c.website}" target="_blank" rel="noopener">Visit website</a>`],
+    c.type     &&['🍽️','Type',c.type],
+    c.price    &&['💰','Price',c.price],
+    c.weight   &&['⚖️','Weight',c.weight],
+    c.timeLimit&&['⏱️','Time Limit',c.timeLimit],
+    stars      &&['⭐','Difficulty',`<span class="stars" style="font-size:14px">${stars}</span>`],
+    c.completionCount&&['🏆','Completions',c.completionCount],
+  ].filter(Boolean);
+  const extraPhotos=(c.photos||[]).slice(1);
+  const done=myCompletions.has(c.id||c.link);
+  document.getElementById('detail-content').innerHTML=`
+    ${c.imgSrc?`<div id="detail-hero-wrap"><img id="detail-hero" src="${c.imgSrc}" alt=""></div>`:''}
+    ${extraPhotos.length?`<div class="detail-photos">${extraPhotos.map(p=>`<img src="${p}" onclick="window.open('${p}')">`).join('')}</div>`:''}
+    <div id="detail-body">
+      <div id="detail-name">${c.title||'Challenge'}</div>
+      <div id="detail-where">${c.where||''} ${c.location?'· '+c.location:''}</div>
+      <div id="detail-badges">${verificationBadgeHtml(c.verificationStatus)}</div>
+      <div class="detail-section">${rows.map(([icon,key,val])=>`<div class="detail-row"><div class="detail-icon">${icon}</div><div class="detail-key">${key}</div><div class="detail-val">${val}</div></div>`).join('')}</div>
+      ${c.description?`<div id="detail-desc">${c.description}</div>`:''}
+    </div>
+    ${c.link?`<a id="detail-open-btn" href="${c.link}" target="_blank" rel="noopener">View Full Listing ↗</a>`:''}
+    <button id="complete-btn" class="${done?'done':''}" onclick="openCompletion()">${done?'✓ Completed!':'Mark as Completed'}</button>
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+}
+document.getElementById('back-btn').addEventListener('click',()=>document.getElementById('detail-panel').classList.remove('open'));
+window.openDetail=openDetail;
+
+// ── Completion ────────────────────────────────────────────────────────────────
+function openCompletion() {
+  if(!currentUser){openAuth();return;}
+  if(!currentDetail)return;
+  document.getElementById('completion-challenge-name').textContent=currentDetail.title||'Challenge';
+  document.getElementById('completion-modal').classList.add('open');
+}
+async function doCompletion() {
+  if(!currentUser){openAuth();return;}
+  const fd=new FormData();
+  fd.append('challengeId', currentDetail.id||currentDetail.link||currentDetail.title);
+  fd.append('challengeTitle', currentDetail.title||'');
+  fd.append('notes', document.getElementById('comp-notes').value);
+  fd.append('time', document.getElementById('comp-time').value);
+  fd.append('isJsonChallenge', currentDetail._source==='json'?'true':'false');
+  const files=document.getElementById('comp-photos').files;
+  for(const f of files) fd.append('photos', f);
+  const res=await fetch('/api/completions',{method:'POST',body:fd});
+  const data=await res.json();
+  if(!data.ok){document.getElementById('comp-error').textContent=data.error;return;}
+  myCompletions.add(currentDetail.id||currentDetail.link);
+  document.getElementById('completion-modal').classList.remove('open');
+  document.getElementById('comp-notes').value='';
+  document.getElementById('comp-time').value='';
+  render();
+  openDetail(currentDetail);
+}
+
+// ── Submit challenge ──────────────────────────────────────────────────────────
+document.getElementById('submit-map-btn').addEventListener('click',()=>{
+  if(!currentUser){openAuth();return;}
+  document.getElementById('submit-modal').classList.add('open');
+});
+function startSubmitLocPick(){
+  document.getElementById('submit-modal').classList.remove('open');
+  clickingForSubmit=true;clickingMap=false;
+  map.getContainer().style.cursor='crosshair';
+  document.getElementById('dev-click-hint').style.display='block';
+}
+async function doSubmit(){
+  const fd=new FormData();
+  const fields={title:'sub-title',where:'sub-where',address:'sub-address',phone:'sub-phone',website:'sub-website',price:'sub-price',weight:'sub-weight',timeLimit:'sub-time',type:'sub-type',description:'sub-desc',lat:'sub-lat',lng:'sub-lng'};
+  for(const[k,id]of Object.entries(fields)) fd.append(k, document.getElementById(id).value||'');
+  if(!fd.get('title')||!fd.get('address')){document.getElementById('sub-error').textContent='Title and address are required';return;}
+  const files=document.getElementById('sub-photos').files;
+  for(const f of files) fd.append('photos',f);
+  const res=await fetch('/api/challenges/submit',{method:'POST',body:fd});
+  const data=await res.json();
+  if(!data.ok){document.getElementById('sub-error').textContent=data.error;return;}
+  document.getElementById('submit-modal').classList.remove('open');
+  allChallenges.push({...data.challenge});
+  render();
+  alert('Challenge submitted! It will appear on the map as unverified.');
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+let regRole='user';
+function openAuth(){document.getElementById('auth-modal').classList.add('open');}
+function closeAuth(){document.getElementById('auth-modal').classList.remove('open');}
+function switchTab(t){
+  document.querySelectorAll('.auth-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f=>f.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${t}')"]`).classList.add('active');
+  document.getElementById(`${t}-form`).classList.add('active');
+}
+function setRole(r){
+  regRole=r;
+  document.getElementById('role-user-btn').classList.toggle('active',r==='user');
+  document.getElementById('role-biz-btn').classList.toggle('active',r==='business');
+  document.getElementById('biz-fields').classList.toggle('show',r==='business');
+}
+async function doLogin(){
+  const email=document.getElementById('login-email').value;
+  const password=document.getElementById('login-password').value;
+  const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+  const data=await res.json();
+  if(!data.ok){document.getElementById('login-error').textContent=data.error;return;}
+  currentUser=data.user;updateAccountBtn();closeAuth();
+  document.getElementById('notif-btn').style.display='flex';
+  loadNotifications();loadMyCompletions();render();
+}
+async function doRegister(){
+  const body={
+    username:document.getElementById('reg-username').value,
+    email:document.getElementById('reg-email').value,
+    password:document.getElementById('reg-password').value,
+    role:regRole,
+    businessName:document.getElementById('reg-biz-name').value,
+    businessPhone:document.getElementById('reg-biz-phone').value,
+    businessAddress:document.getElementById('reg-biz-address').value,
+  };
+  const res=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data=await res.json();
+  if(!data.ok){document.getElementById('reg-error').textContent=data.error;return;}
+  if(data.pending){closeAuth();alert(data.message);return;}
+  currentUser=data.user;updateAccountBtn();closeAuth();
+  document.getElementById('notif-btn').style.display='flex';
+  loadNotifications();render();
+}
+function updateAccountBtn(){
+  const btn=document.getElementById('account-btn');
+  btn.title=currentUser?`Signed in as ${currentUser.username}`:'Sign in';
+  btn.style.color=currentUser?'var(--accent)':'var(--text2)';
+  btn.onclick=currentUser?showAccountMenu:openAuth;
+}
+function showAccountMenu(){
+  const isAdmin=currentUser.role==='admin';
+  const isBiz=currentUser.role==='business';
+  const menu=document.createElement('div');
+  menu.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);backdrop-filter:blur(4px)';
+  menu.innerHTML=`<div style="background:var(--sheet-bg);border-radius:var(--rlg) var(--rlg) 0 0;width:100%;max-width:480px;padding:20px 16px max(env(safe-area-inset-bottom),24px)">
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">${currentUser.username}</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px">${currentUser.email} · <span style="color:var(--accent)">${currentUser.role}</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${isAdmin?`<button class="fc-btn" onclick="window.location='/admin.html'" style="background:var(--surface2);color:var(--text)">⚙️ Admin Panel</button>`:''}
+      <button class="fc-btn" onclick="window.location='/admin.html'" style="background:var(--surface2);color:var(--text);display:${isAdmin?'none':'none'}"></button>
+      <button class="fc-btn" style="background:var(--surface2);color:var(--text)" onclick="this.closest('div[style*=fixed]').remove();showMyCompletions()">🏆 My Completions</button>
+      ${isAdmin||isBiz?`<button class="fc-btn" style="background:var(--surface2);color:var(--text)" onclick="window.location='/admin.html'">📊 Dashboard</button>`:''}
+      <button class="fc-btn" style="background:#fff0f0;color:#ff3b30" onclick="doLogout()">Sign Out</button>
+      <button class="fc-btn" style="background:var(--surface2);color:var(--text2)" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+    </div>
+  </div>`;
+  menu.addEventListener('click',e=>{if(e.target===menu)menu.remove();});
+  document.body.appendChild(menu);
+}
+async function doLogout(){
+  await fetch('/api/auth/logout',{method:'POST'});
+  currentUser=null;updateAccountBtn();
+  document.getElementById('notif-btn').style.display='none';
+  document.querySelectorAll('[style*=fixed]').forEach(e=>e.remove());
+  render();
+}
+async function showMyCompletions(){
+  const res=await fetch('/api/completions/me');
+  const data=await res.json();
+  const completions=data.completions||[];
+  const menu=document.createElement('div');
+  menu.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);backdrop-filter:blur(4px)';
+  menu.innerHTML=`<div style="background:var(--sheet-bg);border-radius:var(--rlg) var(--rlg) 0 0;width:100%;max-width:480px;padding:20px 16px max(env(safe-area-inset-bottom),24px);max-height:80vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="font-size:18px;font-weight:800">🏆 My Completions (${completions.length})</h2>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer">✕</button>
+    </div>
+    ${completions.length===0?'<div style="text-align:center;color:var(--text2);padding:20px">No completions yet!</div>':
+      completions.map(c=>`<div style="padding:12px;background:var(--surface2);border-radius:var(--rsm);margin-bottom:8px">
+        <div style="font-size:14px;font-weight:600">${c.challengeTitle||c.challengeId}</div>
+        ${c.time?`<div style="font-size:12px;color:var(--accent);margin-top:2px">⏱ ${c.time}</div>`:''}
+        ${c.notes?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${c.notes}</div>`:''}
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">${new Date(c.createdAt).toLocaleDateString()}</div>
+        ${c.photos&&c.photos.length?`<div style="display:flex;gap:4px;margin-top:6px">${c.photos.map(p=>`<img src="${p}" style="width:50px;height:50px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
+      </div>`).join('')}
+  </div>`;
+  menu.addEventListener('click',e=>{if(e.target===menu)menu.remove();});
+  document.body.appendChild(menu);
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+document.getElementById('notif-btn').addEventListener('click',async()=>{
+  const panel=document.getElementById('notif-panel');
+  if(panel.classList.toggle('open')){
+    await fetch('/api/notifications/read',{method:'POST'});
+    document.getElementById('notif-dot').style.display='none';
+    loadNotifications();
+  }
+});
+document.getElementById('close-notif').addEventListener('click',()=>document.getElementById('notif-panel').classList.remove('open'));
+
+// ── Slider / Search / Sort ────────────────────────────────────────────────────
+const slider=document.getElementById('radius-slider');
+function updateSlider(){
+  const min=+slider.min,max=+slider.max,val=+slider.value;
+  slider.style.setProperty('--pct',((val-min)/(max-min)*100).toFixed(1)+'%');
+  radiusMiles=val;document.getElementById('radius-value').textContent=val+' mi';render();
+}
+slider.addEventListener('input',updateSlider);updateSlider();
+document.getElementById('search-input').addEventListener('input',e=>{searchQuery=e.target.value;render();});
+document.getElementById('sort-btn').addEventListener('click',()=>{
+  sortMode=sortMode==='distance'?'rating':'distance';
+  document.getElementById('sort-btn').textContent=sortMode==='distance'?'Distance ▾':'Rating ▾';render();
+});
+document.getElementById('filter-btn').addEventListener('click',()=>{
+  const types=[...new Set(allChallenges.map(c=>c.type).filter(Boolean))].sort();
+  const menu=document.createElement('div');
+  menu.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);backdrop-filter:blur(4px)';
+  menu.innerHTML=`<div style="background:var(--sheet-bg);border-radius:var(--rlg) var(--rlg) 0 0;width:100%;max-width:480px;padding:20px 16px max(env(safe-area-inset-bottom),24px);max-height:60vh;overflow-y:auto">
+    <div style="font-size:17px;font-weight:700;margin-bottom:12px">Filter by Type</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <button class="badge" style="padding:8px 14px;cursor:pointer;font-size:13px;${!filterType?'background:var(--accent);color:#fff':''}" onclick="setFilter('')">All</button>
+      ${types.map(t=>`<button class="badge" style="padding:8px 14px;cursor:pointer;font-size:13px;${filterType===t?'background:var(--accent);color:#fff':''}" onclick="setFilter('${t}')">${t}</button>`).join('')}
+    </div>
+  </div>`;
+  menu.addEventListener('click',e=>{if(e.target===menu)menu.remove();});
+  document.body.appendChild(menu);
+});
+function setFilter(t){filterType=t;document.querySelectorAll('[style*=fixed]').forEach(e=>e.remove());render();}
+
+// ── Sheet drag ────────────────────────────────────────────────────────────────
+const sheet=document.getElementById('sheet');
+const mapBtns=document.getElementById('map-btns');
+let sheetH=280,isDragging=false,sheetStartY=0,sheetStartH=0;
+const SNAP_PEEK=280,SNAP_MID=()=>Math.round(window.innerHeight*.52),SNAP_FULL=()=>Math.round(window.innerHeight*.9);
+function setSheetH(h){
+  sheetH=Math.max(120,Math.min(SNAP_FULL(),h));
+  sheet.style.height=sheetH+'px';
+  const staticH=document.getElementById('radius-section').offsetHeight+document.getElementById('results-header').offsetHeight+30;
+  document.getElementById('results-list').style.height=(sheetH-staticH)+'px';
+  mapBtns.style.bottom=(sheetH+14)+'px';
+}
+function snapSheet(h){
+  const snaps=[SNAP_PEEK,SNAP_MID(),SNAP_FULL()];
+  const closest=snaps.reduce((a,b)=>Math.abs(b-h)<Math.abs(a-h)?b:a);
+  sheet.style.transition='height .32s cubic-bezier(.32,.72,0,1)';setSheetH(closest);
+  setTimeout(()=>sheet.style.transition='',350);
+}
+const handleArea=document.getElementById('sheet-handle-area');
+handleArea.addEventListener('pointerdown',e=>{isDragging=true;sheetStartY=e.clientY;sheetStartH=sheetH;handleArea.setPointerCapture(e.pointerId);sheet.style.transition='none';});
+handleArea.addEventListener('pointermove',e=>{if(!isDragging)return;setSheetH(sheetStartH+(sheetStartY-e.clientY));});
+handleArea.addEventListener('pointerup',()=>{if(!isDragging)return;isDragging=false;snapSheet(sheetH);});
+setSheetH(SNAP_PEEK);
+window.addEventListener('resize',()=>setSheetH(Math.min(sheetH,SNAP_FULL())));
+
+function stopClickMap(){
+  clickingMap=false;clickingForSubmit=false;
+  map.getContainer().style.cursor='';
+  document.getElementById('dev-click-hint').style.display='none';
+}
+
+initAuth().then(loadAll);
+</script>
+</body>
+</html>

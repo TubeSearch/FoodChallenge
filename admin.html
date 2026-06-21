@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Food Challenges</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+body{display:flex;height:100dvh;overflow:hidden;background:var(--bg)}
+
+/* Sidebar */
+#sidebar{width:240px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100dvh}
+#sidebar-logo{padding:20px 18px 12px;border-bottom:1px solid var(--border)}
+#sidebar-logo h1{font-size:17px;font-weight:800;color:var(--accent)}
+#sidebar-logo p{font-size:12px;color:var(--text2);margin-top:2px}
+#sidebar-nav{flex:1;overflow-y:auto;padding:10px 8px}
+.nav-section{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:12px 10px 4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text2);border:none;background:transparent;width:100%;text-align:left;font-family:inherit;transition:background .12s,color .12s;position:relative}
+.nav-item:hover{background:var(--surface2)}
+.nav-item.active{background:var(--accent-light);color:var(--accent);font-weight:600}
+.nav-item .nav-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px;min-width:20px;text-align:center}
+#sidebar-footer{padding:14px 12px;border-top:1px solid var(--border)}
+#user-chip{display:flex;align-items:center;gap:10px}
+#user-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+#user-info{flex:1;min-width:0}
+#user-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#user-role{font-size:11px;color:var(--text2)}
+#logout-btn{background:none;border:none;color:var(--text2);cursor:pointer;font-size:13px;padding:4px;border-radius:6px}
+#logout-btn:hover{color:var(--danger)}
+
+/* Main */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#topbar{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface);flex-shrink:0}
+#page-title{font-size:20px;font-weight:800;flex:1}
+#topbar-actions{display:flex;gap:8px}
+.topbar-btn{background:var(--surface2);border:none;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);font-family:inherit}
+.topbar-btn.primary{background:var(--accent);color:#fff}
+.topbar-btn:active{opacity:.8}
+
+#content{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* Stats row */
+#stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:var(--surface);border-radius:var(--rmd);padding:16px;border:1px solid var(--border)}
+.stat-val{font-size:28px;font-weight:800;color:var(--accent);line-height:1}
+.stat-label{font-size:12px;color:var(--text2);margin-top:4px;font-weight:500}
+.stat-sub{font-size:11px;color:var(--danger);font-weight:600;margin-top:2px}
+
+/* Tables */
+.section-card{background:var(--surface);border-radius:var(--rmd);border:1px solid var(--border);overflow:hidden;margin-bottom:20px}
+.section-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.section-head h2{font-size:15px;font-weight:700}
+.search-bar{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--text);outline:none;width:200px;font-family:inherit}
+.search-bar:focus{border-color:var(--accent)}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--card-hover)}
+.td-actions{display:flex;gap:6px;flex-wrap:wrap}
+.act-btn{padding:4px 10px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.act-btn:active{opacity:.8}
+.act-approve{background:var(--success-light);color:var(--success)}
+.act-reject{background:var(--danger-light);color:var(--danger)}
+.act-verify{background:#e5f0ff;color:#007aff}
+.act-edit{background:var(--badge-bg);color:var(--text)}
+.act-delete{background:var(--danger-light);color:var(--danger)}
+.act-view{background:var(--accent-light);color:var(--accent)}
+.challenge-img{width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--badge-bg);flex-shrink:0}
+.truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+
+/* Modal */
+#modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
+#modal-overlay.open{display:flex}
+#modal-box{background:var(--sheet-bg);border-radius:var(--rmd);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-heavy)}
+#modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--sheet-bg);z-index:1}
+#modal-header h2{font-size:17px;font-weight:800}
+#modal-body{padding:20px;display:flex;flex-direction:column;gap:12px}
+#modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.modal-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px}
+.modal-section{margin-bottom:4px}
+
+/* Mobile sidebar toggle */
+#menu-toggle{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text);padding:0 4px}
+@media(max-width:700px){
+  #sidebar{position:fixed;left:-260px;top:0;bottom:0;z-index:500;transition:left .3s;width:260px;box-shadow:var(--shadow-heavy)}
+  #sidebar.open{left:0}
+  #menu-toggle{display:block}
+  #content{padding:14px}
+  table{font-size:12px}
+  th,td{padding:8px 10px}
+}
+
+/* Empty state */
+.empty-table{padding:40px;text-align:center;color:var(--text2)}
+.empty-table .icon{font-size:36px;margin-bottom:8px}
+.empty-table p{font-size:14px}
+
+/* Photos row */
+.photo-strip{display:flex;gap:4px;flex-wrap:wrap}
+.photo-strip img{width:48px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer}
+
+/* Tabs within content */
+.tab-bar{display:flex;gap:0;background:var(--surface2);border-radius:10px;padding:2px;margin-bottom:16px;width:fit-content}
+.tab{padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text2);font-family:inherit}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <div id="sidebar-logo">
+    <h1>🍔 FC Admin</h1>
+    <p id="admin-subtitle">Food Challenges</p>
+  </div>
+  <nav id="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <button class="nav-item active" onclick="showPage('dashboard')"><span class="nav-icon">📊</span>Dashboard</button>
+    <button class="nav-item" onclick="showPage('map')"><span class="nav-icon">🗺️</span>View Map</button>
+
+    <div class="nav-section">Challenges</div>
+    <button class="nav-item" id="nav-pending" onclick="showPage('pending')"><span class="nav-icon">⏳</span>Pending Review<span class="nav-badge" id="pending-count" style="display:none">0</span></button>
+    <button class="nav-item" onclick="showPage('challenges')"><span class="nav-icon">🍽️</span>All Challenges</button>
+    <button class="nav-item" onclick="showPage('json-challenges')"><span class="nav-icon">📁</span>JSON Challenges</button>
+
+    <div class="nav-section">Community</div>
+    <button class="nav-item" id="nav-users-pending" onclick="showPage('users')"><span class="nav-icon">👥</span>Users<span class="nav-badge" id="users-pending-count" style="display:none">0</span></button>
+    <button class="nav-item" onclick="showPage('completions')"><span class="nav-icon">🏆</span>Completions</button>
+
+    <div class="nav-section">Business</div>
+    <button class="nav-item" onclick="showPage('business')"><span class="nav-icon">🏪</span>Business Accounts</button>
+    <button class="nav-item" onclick="showPage('business-challenges')"><span class="nav-icon">📋</span>Business Challenges</button>
+  </nav>
+  <div id="sidebar-footer">
+    <div id="user-chip">
+      <div id="user-avatar">A</div>
+      <div id="user-info">
+        <div id="user-name">Loading…</div>
+        <div id="user-role">admin</div>
+      </div>
+      <button id="logout-btn" title="Sign out" onclick="doLogout()">↩</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main content -->
+<div id="main">
+  <div id="topbar">
+    <button id="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+    <div id="page-title">Dashboard</div>
+    <div id="topbar-actions"></div>
+  </div>
+  <div id="content">
+    <div id="loading-screen" style="display:flex;align-items:center;justify-content:center;height:200px;gap:12px;color:var(--text2)">
+      <div class="spinner"></div><span>Loading…</span>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <div id="modal-header">
+      <h2 id="modal-title">Modal</h2>
+      <button class="icon-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+    <div id="modal-footer" style="display:none"></div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+let currentUser = null;
+let allUsers = [], allChallenges = [], allCompletions = [], stats = {};
+let jsonChallenges = [];
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  const res = await fetch('/api/auth/me');
+  const data = await res.json();
+  if (!data.user || data.user.role !== 'admin') {
+    document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:-apple-system,sans-serif">
+      <div style="font-size:40px">🔒</div>
+      <div style="font-size:18px;font-weight:700">Admin access required</div>
+      <a href="/" style="color:var(--accent)">← Back to map</a>
+    </div>`;
+    return;
+  }
+  currentUser = data.user;
+  document.getElementById('user-avatar').textContent = currentUser.username[0].toUpperCase();
+  document.getElementById('user-name').textContent = currentUser.username;
+  document.getElementById('user-role').textContent = currentUser.role;
+  await refreshAll();
+  showPage('dashboard');
+}
+
+async function refreshAll() {
+  const [usersRes, challengesRes, completionsRes, statsRes] = await Promise.all([
+    fetch('/api/users'), fetch('/api/challenges'), fetch('/api/completions/all'), fetch('/api/stats')
+  ]);
+  allUsers = (await usersRes.json()).users || [];
+  allChallenges = (await challengesRes.json()).challenges || [];
+  allCompletions = (await completionsRes.json()).completions || [];
+  stats = (await statsRes.json()).stats || {};
+
+  // Load pending separately
+  const pendingRes = await fetch('/api/challenges/pending');
+  const pendingData = await pendingRes.json();
+  const pending = pendingData.challenges || [];
+
+  const pendingBadge = document.getElementById('pending-count');
+  if (pending.length > 0) { pendingBadge.style.display='inline-block'; pendingBadge.textContent=pending.length; }
+  else pendingBadge.style.display='none';
+
+  const pendingUsers = allUsers.filter(u => !u.approved).length;
+  const upBadge = document.getElementById('users-pending-count');
+  if (pendingUsers > 0) { upBadge.style.display='inline-block'; upBadge.textContent=pendingUsers; }
+  else upBadge.style.display='none';
+
+  // Load JSON challenges for reference
+  try {
+    const jr = await fetch('/data/foodchallenges.json');
+    jsonChallenges = await jr.json();
+  } catch(e) { jsonChallenges = []; }
+}
+
+async function doLogout() {
+  await fetch('/api/auth/logout', { method:'POST' });
+  window.location.href = '/';
+}
+
+// ── Pages ─────────────────────────────────────────────────────────────────────
+function showPage(page) {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const navMap = {dashboard:0,map:1,pending:3,challenges:4,'json-challenges':5,users:7,completions:8,business:10,'business-challenges':11};
+  const navItems = document.querySelectorAll('.nav-item');
+  if (navMap[page] !== undefined && navItems[navMap[page]]) navItems[navMap[page]].classList.add('active');
+
+  const actions = document.getElementById('topbar-actions');
+  actions.innerHTML = '';
+
+  const titles = {
+    dashboard:'Dashboard', map:'Live Map', pending:'Pending Review',
+    challenges:'All DB Challenges', 'json-challenges':'JSON Challenges',
+    users:'Users', completions:'Completions', business:'Business Accounts',
+    'business-challenges':'Business Challenges'
+  };
+  document.getElementById('page-title').textContent = titles[page] || page;
+
+  const pages = { dashboard, map: mapPage, pending: pendingPage, challenges: challengesPage,
+    'json-challenges': jsonChallengesPage, users: usersPage, completions: completionsPage,
+    business: businessPage, 'business-challenges': businessChallengesPage };
+  if (pages[page]) pages[page](actions);
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function dashboard() {
+  const c = document.getElementById('content');
+  c.innerHTML = `
+    <div id="stats-row">
+      <div class="stat-card"><div class="stat-val">${stats.users||0}</div><div class="stat-label">Total Users</div>${stats.pendingUsers?`<div class="stat-sub">${stats.pendingUsers} pending</div>`:''}</div>
+      <div class="stat-card"><div class="stat-val">${(jsonChallenges.length||0)+(stats.approvedChallenges||0)}</div><div class="stat-label">Total Challenges</div><div class="stat-sub" style="color:var(--text2)">${stats.approvedChallenges||0} community</div></div>
+      <div class="stat-card"><div class="stat-val">${stats.pendingChallenges||0}</div><div class="stat-label">Pending Review</div>${stats.pendingChallenges?`<div class="stat-sub">Needs attention</div>`:''}</div>
+      <div class="stat-card"><div class="stat-val">${stats.completions||0}</div><div class="stat-label">Completions</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+      <div class="section-card">
+        <div class="section-head"><h2>Recent Submissions</h2></div>
+        <div id="recent-submissions"></div>
+      </div>
+      <div class="section-card">
+        <div class="section-head"><h2>Pending Business Accounts</h2></div>
+        <div id="pending-biz"></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head"><h2>Recent Completions</h2></div>
+      <div id="recent-completions"></div>
+    </div>
+  `;
+
+  // Recent submissions
+  const recentSubs = [...allChallenges].sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
+  document.getElementById('recent-submissions').innerHTML = recentSubs.length === 0
+    ? '<div class="empty-table"><div class="icon">✅</div><p>No submissions yet</p></div>'
+    : recentSubs.map(c => `
+      <div class="card-row" style="cursor:pointer" onclick="openChallengeModal('${c.id}')">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(c.title)}</div>
+          <div style="font-size:11px;color:var(--text2)">${escHtml(c.submittedByUsername||'')} · ${timeAgo(c.createdAt)}</div>
+        </div>
+        <span class="tag tag-${c.status}">${c.status}</span>
+      </div>`).join('');
+
+  // Pending biz
+  const pendingBiz = allUsers.filter(u => !u.approved && u.role === 'business_pending');
+  document.getElementById('pending-biz').innerHTML = pendingBiz.length === 0
+    ? '<div class="empty-table"><div class="icon">🏪</div><p>No pending accounts</p></div>'
+    : pendingBiz.map(u => `
+      <div class="card-row">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${escHtml(u.businessName||u.username)}</div>
+          <div style="font-size:11px;color:var(--text2)">${escHtml(u.businessPhone||'')} · ${escHtml(u.email)}</div>
+        </div>
+        <button class="act-btn act-approve" onclick="approveUser('${u.id}')">Approve</button>
+      </div>`).join('');
+
+  // Recent completions
+  const recentComp = [...allCompletions].sort((a,b)=>b.createdAt-a.createdAt).slice(0,8);
+  document.getElementById('recent-completions').innerHTML = recentComp.length === 0
+    ? '<div class="empty-table"><div class="icon">🏆</div><p>No completions yet</p></div>'
+    : `<table><thead><tr><th>User</th><th>Challenge</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>
+      ${recentComp.map(cp=>`<tr>
+        <td><strong>${escHtml(cp.username)}</strong></td>
+        <td class="truncate">${escHtml(cp.challengeTitle||cp.challengeId)}</td>
+        <td>${escHtml(cp.time||'—')}</td>
+        <td>${fmtDate(cp.createdAt)}</td>
+        <td><button class="act-btn act-delete" onclick="deleteCompletion('${cp.id}')">Delete</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ── Map page ──────────────────────────────────────────────────────────────────
+function mapPage() {
+  window.open('/', '_blank');
+  showPage('dashboard');
+}
+
+// ── Pending page ──────────────────────────────────────────────────────────────
+async function pendingPage(actions) {
+  const res = await fetch('/api/challenges/pending');
+  const data = await res.json();
+  const pending = data.challenges || [];
+  const c = document.getElementById('content');
+
+  actions.innerHTML = `<button class="topbar-btn" onclick="refreshAll().then(()=>showPage('pending'))">↻ Refresh</button>`;
+
+  if (pending.length === 0) {
+    c.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:12px;color:var(--text2)">
+      <div style="font-size:48px">✅</div><div style="font-size:18px;font-weight:700">All caught up!</div><p>No pending submissions</p></div>`;
+    return;
+  }
+
+  c.innerHTML = `<div class="section-card"><div class="section-head"><h2>${pending.length} Pending Submission${pending.length!==1?'s':''}</h2></div>
+    ${pending.map(ch => `
+    <div style="padding:16px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        ${ch.imgSrc?`<img src="${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center;font-size:20px">🍽️</div>'}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:15px;font-weight:700;margin-bottom:2px">${escHtml(ch.title)}</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:6px">${escHtml(ch.where||'')} · ${escHtml(ch.address||'')} · Submitted by <strong>${escHtml(ch.submittedByUsername)}</strong> ${timeAgo(ch.createdAt)}</div>
+          ${ch.phone?`<div style="font-size:12px;color:var(--text2)">📞 ${escHtml(ch.phone)}</div>`:''}
+          ${ch.website?`<div style="font-size:12px"><a href="${escHtml(ch.website)}" target="_blank" rel="noopener" style="color:var(--accent)">🌐 Visit website</a></div>`:''}
+          ${ch.price||ch.weight||ch.timeLimit?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${[ch.price,ch.weight,ch.timeLimit].filter(Boolean).join(' · ')}</div>`:''}
+          ${ch.description?`<div style="font-size:13px;margin-top:8px;line-height:1.5;color:var(--text2)">${escHtml(ch.description).substring(0,300)}${ch.description.length>300?'…':''}</div>`:''}
+          ${ch.photos&&ch.photos.length?`<div class="photo-strip" style="margin-top:8px">${ch.photos.map(p=>`<img src="${p}" onclick="window.open('${p}')">`).join('')}</div>`:''}
+        </div>
+      </div>
+      <div class="td-actions" style="margin-top:12px">
+        <button class="act-btn act-approve" onclick="reviewChallenge('${ch.id}','approve')">✓ Approve & Verify</button>
+        <button class="act-btn act-verify" onclick="reviewChallenge('${ch.id}','admin_verify')">⭐ Admin Verify Only</button>
+        <button class="act-btn act-edit" onclick="openChallengeModal('${ch.id}')">✎ Edit</button>
+        <button class="act-btn act-reject" onclick="promptReject('${ch.id}')">✗ Reject</button>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ── All Challenges page ────────────────────────────────────────────────────────
+function challengesPage(actions) {
+  actions.innerHTML = `<input class="search-bar" id="chal-search" placeholder="Search…" oninput="filterChallengesTable()">`;
+  const c = document.getElementById('content');
+  c.innerHTML = `<div class="section-card">
+    <div class="section-head"><h2>${allChallenges.length} DB Challenges</h2></div>
+    <div style="overflow-x:auto"><table id="chal-table">
+      <thead><tr><th>Image</th><th>Title</th><th>Location</th><th>Status</th><th>Verification</th><th>Submitted By</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody id="chal-tbody">${renderChallengeRows(allChallenges)}</tbody>
+    </table></div>
+  </div>`;
+}
+
+function renderChallengeRows(list) {
+  if (!list.length) return `<tr><td colspan="8"><div class="empty-table"><div class="icon">🍽️</div><p>No challenges</p></div></td></tr>`;
+  return list.map(ch=>`<tr>
+    <td>${ch.imgSrc?`<img src="${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
+    <td><div class="truncate" style="max-width:180px;font-weight:600">${escHtml(ch.title)}</div></td>
+    <td><div class="truncate">${escHtml(ch.address||'')}</div></td>
+    <td><span class="tag tag-${ch.status}">${ch.status}</span></td>
+    <td><span class="tag tag-${(ch.verificationStatus||'').replace('_','-')}">${ch.verificationStatus||'?'}</span></td>
+    <td>${escHtml(ch.submittedByUsername||'—')}</td>
+    <td>${fmtDate(ch.createdAt)}</td>
+    <td><div class="td-actions">
+      <button class="act-btn act-view" onclick="openChallengeModal('${ch.id}')">View</button>
+      <button class="act-btn act-verify" onclick="reviewChallenge('${ch.id}','admin_verify')">Verify</button>
+      <button class="act-btn act-delete" onclick="deleteChallenge('${ch.id}')">Delete</button>
+    </div></td>
+  </tr>`).join('');
+}
+
+function filterChallengesTable() {
+  const q = document.getElementById('chal-search')?.value.toLowerCase()||'';
+  const filtered = allChallenges.filter(c=>[c.title,c.address,c.submittedByUsername,c.type].some(f=>f?.toLowerCase().includes(q)));
+  const tbody = document.getElementById('chal-tbody');
+  if (tbody) tbody.innerHTML = renderChallengeRows(filtered);
+}
+
+// ── JSON Challenges page ──────────────────────────────────────────────────────
+function jsonChallengesPage(actions) {
+  actions.innerHTML = `<input class="search-bar" id="json-search" placeholder="Search…" oninput="filterJsonTable()">`;
+  const c = document.getElementById('content');
+  c.innerHTML = `<div class="section-card">
+    <div class="section-head"><h2>${jsonChallenges.length} JSON Challenges (read-only source)</h2></div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Title</th><th>Restaurant</th><th>Address</th><th>Type</th><th>Price</th><th>Difficulty</th></tr></thead>
+      <tbody id="json-tbody">${renderJsonRows(jsonChallenges.slice(0,200))}</tbody>
+    </table></div>
+    ${jsonChallenges.length>200?`<div style="padding:12px 16px;font-size:12px;color:var(--text2)">Showing first 200 of ${jsonChallenges.length}. Use search to filter.</div>`:''}
+  </div>`;
+}
+
+function renderJsonRows(list) {
+  return list.map(c=>`<tr>
+    <td><div class="truncate" style="font-weight:600">${escHtml(c.title||'')}</div></td>
+    <td class="truncate">${escHtml(c.where||'')}</td>
+    <td class="truncate">${escHtml(c.address||'')}</td>
+    <td>${escHtml(c.type||'')}</td>
+    <td>${escHtml(c.price||'')}</td>
+    <td>${c.difficulty?'★'.repeat(c.difficulty):'—'}</td>
+  </tr>`).join('');
+}
+
+function filterJsonTable() {
+  const q = document.getElementById('json-search')?.value.toLowerCase()||'';
+  const filtered = q ? jsonChallenges.filter(c=>[c.title,c.where,c.address,c.type].some(f=>f?.toLowerCase().includes(q))) : jsonChallenges.slice(0,200);
+  const tbody = document.getElementById('json-tbody');
+  if (tbody) tbody.innerHTML = renderJsonRows(filtered.slice(0,200));
+}
+
+// ── Users page ────────────────────────────────────────────────────────────────
+function usersPage(actions) {
+  actions.innerHTML = `<input class="search-bar" id="user-search" placeholder="Search users…" oninput="filterUsersTable()">`;
+  const c = document.getElementById('content');
+  c.innerHTML = `
+    <div class="tab-bar" style="margin-bottom:16px">
+      <button class="tab active" onclick="setUserTab('all',this)">All (${allUsers.length})</button>
+      <button class="tab" onclick="setUserTab('pending',this)">Pending (${allUsers.filter(u=>!u.approved).length})</button>
+      <button class="tab" onclick="setUserTab('business',this)">Business (${allUsers.filter(u=>u.role==='business').length})</button>
+      <button class="tab" onclick="setUserTab('admin',this)">Admins (${allUsers.filter(u=>u.role==='admin').length})</button>
+    </div>
+    <div class="section-card">
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Business</th><th>Phone</th><th>Joined</th><th>Actions</th></tr></thead>
+        <tbody id="users-tbody">${renderUserRows(allUsers)}</tbody>
+      </table></div>
+    </div>`;
+}
+
+let userTabFilter = 'all';
+function setUserTab(tab, el) {
+  userTabFilter = tab;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  filterUsersTable();
+}
+function filterUsersTable() {
+  const q = (document.getElementById('user-search')?.value||'').toLowerCase();
+  let list = allUsers;
+  if (userTabFilter==='pending') list=list.filter(u=>!u.approved);
+  else if (userTabFilter==='business') list=list.filter(u=>u.role==='business');
+  else if (userTabFilter==='admin') list=list.filter(u=>u.role==='admin');
+  if (q) list=list.filter(u=>[u.username,u.email,u.businessName].some(f=>f?.toLowerCase().includes(q)));
+  const tbody=document.getElementById('users-tbody');
+  if (tbody) tbody.innerHTML=renderUserRows(list);
+}
+function renderUserRows(list) {
+  if (!list.length) return `<tr><td colspan="8"><div class="empty-table"><div class="icon">👥</div><p>No users found</p></div></td></tr>`;
+  return list.map(u=>`<tr>
+    <td><strong>${escHtml(u.username)}</strong></td>
+    <td>${escHtml(u.email)}</td>
+    <td><span class="tag tag-${u.role==='admin'?'verified':u.role==='business'?'business':'community'}">${u.role}</span></td>
+    <td><span class="tag ${u.approved?'tag-approved':'tag-pending'}">${u.approved?'Active':'Pending'}</span></td>
+    <td>${escHtml(u.businessName||'—')}</td>
+    <td>${escHtml(u.businessPhone||'—')}</td>
+    <td>${fmtDate(u.createdAt)}</td>
+    <td><div class="td-actions">
+      ${!u.approved?`<button class="act-btn act-approve" onclick="approveUser('${u.id}')">Approve</button>`:''}
+      <button class="act-btn act-edit" onclick="openUserModal('${u.id}')">Edit</button>
+      ${u.id!==currentUser.id?`<button class="act-btn act-delete" onclick="deleteUser('${u.id}')">Delete</button>`:''}
+    </div></td>
+  </tr>`).join('');
+}
+
+// ── Completions page ──────────────────────────────────────────────────────────
+function completionsPage(actions) {
+  actions.innerHTML = `<input class="search-bar" id="comp-search" placeholder="Search…" oninput="filterCompTable()">`;
+  const c = document.getElementById('content');
+  c.innerHTML = `<div class="section-card">
+    <div class="section-head"><h2>${allCompletions.length} Total Completions</h2></div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>User</th><th>Challenge</th><th>Time</th><th>Notes</th><th>Photos</th><th>Date</th><th></th></tr></thead>
+      <tbody id="comp-tbody">${renderCompRows(allCompletions)}</tbody>
+    </table></div>
+  </div>`;
+}
+function renderCompRows(list) {
+  if (!list.length) return `<tr><td colspan="7"><div class="empty-table"><div class="icon">🏆</div><p>No completions</p></div></td></tr>`;
+  return list.map(cp=>`<tr>
+    <td><strong>${escHtml(cp.username)}</strong></td>
+    <td class="truncate">${escHtml(cp.challengeTitle||cp.challengeId)}</td>
+    <td>${escHtml(cp.time||'—')}</td>
+    <td><div class="truncate">${escHtml(cp.notes||'—')}</div></td>
+    <td>${cp.photos&&cp.photos.length?`<div class="photo-strip">${cp.photos.map(p=>`<img src="${p}" onclick="window.open('${p}')">`).join('')}</div>`:'—'}</td>
+    <td>${fmtDate(cp.createdAt)}</td>
+    <td><button class="act-btn act-delete" onclick="deleteCompletion('${cp.id}')">Delete</button></td>
+  </tr>`).join('');
+}
+function filterCompTable() {
+  const q=(document.getElementById('comp-search')?.value||'').toLowerCase();
+  const filtered=q?allCompletions.filter(c=>[c.username,c.challengeTitle,c.challengeId].some(f=>f?.toLowerCase().includes(q))):allCompletions;
+  const tbody=document.getElementById('comp-tbody');
+  if(tbody) tbody.innerHTML=renderCompRows(filtered);
+}
+
+// ── Business pages ────────────────────────────────────────────────────────────
+function businessPage(actions) {
+  const bizUsers = allUsers.filter(u=>u.role==='business'||u.role==='business_pending');
+  const c = document.getElementById('content');
+  c.innerHTML = `<div class="section-card">
+    <div class="section-head"><h2>${bizUsers.length} Business Accounts</h2></div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Business</th><th>Owner</th><th>Email</th><th>Phone</th><th>Address</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>${bizUsers.length===0?`<tr><td colspan="7"><div class="empty-table"><div class="icon">🏪</div><p>No business accounts</p></div></td></tr>`:
+      bizUsers.map(u=>`<tr>
+        <td><strong>${escHtml(u.businessName||u.username)}</strong></td>
+        <td>${escHtml(u.username)}</td>
+        <td>${escHtml(u.email)}</td>
+        <td>${escHtml(u.businessPhone||'—')}</td>
+        <td class="truncate">${escHtml(u.businessAddress||'—')}</td>
+        <td><span class="tag ${u.approved?'tag-approved':'tag-pending'}">${u.approved?'Approved':'Pending'}</span></td>
+        <td><div class="td-actions">
+          ${!u.approved?`<button class="act-btn act-approve" onclick="approveUser('${u.id}')">Approve</button>`:''}
+          <button class="act-btn act-edit" onclick="openUserModal('${u.id}')">Edit</button>
+        </div></td>
+      </tr>`).join('')}
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+function businessChallengesPage() {
+  const bizChallenges = allChallenges.filter(c=>c.submittedByRole==='business');
+  const c = document.getElementById('content');
+  c.innerHTML = `<div class="section-card">
+    <div class="section-head"><h2>${bizChallenges.length} Business-Submitted Challenges</h2></div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Image</th><th>Title</th><th>Business</th><th>Address</th><th>Verification</th><th>Completions</th><th>Actions</th></tr></thead>
+      <tbody>${bizChallenges.length===0?`<tr><td colspan="7"><div class="empty-table"><div class="icon">📋</div><p>No business challenges</p></div></td></tr>`:
+      bizChallenges.map(ch=>`<tr>
+        <td>${ch.imgSrc?`<img src="${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center">🍽️</div>'}</td>
+        <td><div class="truncate" style="font-weight:600">${escHtml(ch.title)}</div></td>
+        <td>${escHtml(ch.submittedByUsername||'')}</td>
+        <td class="truncate">${escHtml(ch.address||'')}</td>
+        <td><span class="tag tag-${(ch.verificationStatus||'').replace('_','-')}">${ch.verificationStatus||'?'}</span></td>
+        <td>${ch.completionCount||0}</td>
+        <td><div class="td-actions">
+          <button class="act-btn act-view" onclick="openChallengeModal('${ch.id}')">View</button>
+          <button class="act-btn act-verify" onclick="reviewChallenge('${ch.id}','admin_verify')">Admin Verify</button>
+        </div></td>
+      </tr>`).join('')}
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+async function reviewChallenge(id, action, reason) {
+  const res = await fetch(`/api/challenges/${id}/review`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action, reason })
+  });
+  const data = await res.json();
+  if (!data.ok) { alert('Error: ' + data.error); return; }
+  await refreshAll();
+  const curPage = document.querySelector('.nav-item.active')?.textContent.trim();
+  showPage(curPage==='Pending Review'?'pending':'challenges');
+}
+
+function promptReject(id) {
+  openModal('Reject Challenge', `
+    <div class="modal-section">
+      <div class="modal-label">Reason for rejection (optional — sent to submitter)</div>
+      <textarea class="fc-input" id="reject-reason" rows="3" placeholder="e.g. Duplicate, missing address, cannot verify location…"></textarea>
+    </div>
+  `, [
+    { label:'Reject', cls:'act-reject', action:()=>{ reviewChallenge(id,'reject',document.getElementById('reject-reason').value); closeModal(); } },
+    { label:'Cancel', cls:'act-edit', action:closeModal }
+  ]);
+}
+
+async function deleteChallenge(id) {
+  if (!confirm('Delete this challenge permanently?')) return;
+  const res = await fetch(`/api/challenges/${id}`, { method:'DELETE' });
+  if (!(await res.json()).ok) { alert('Error deleting'); return; }
+  await refreshAll(); showPage('challenges');
+}
+
+async function approveUser(id) {
+  const res = await fetch(`/api/users/${id}/approve`, { method:'POST' });
+  if (!(await res.json()).ok) { alert('Error approving'); return; }
+  await refreshAll(); showPage('users');
+}
+
+async function deleteUser(id) {
+  if (!confirm('Delete this user? This cannot be undone.')) return;
+  const res = await fetch(`/api/users/${id}`, { method:'DELETE' });
+  if (!(await res.json()).ok) { alert('Error deleting'); return; }
+  await refreshAll(); showPage('users');
+}
+
+async function deleteCompletion(id) {
+  if (!confirm('Delete this completion?')) return;
+  const res = await fetch(`/api/completions/${id}`, { method:'DELETE' });
+  if (!(await res.json()).ok) { alert('Error'); return; }
+  await refreshAll(); showPage('completions');
+}
+
+// ── Modals ────────────────────────────────────────────────────────────────────
+function openModal(title, bodyHtml, footerBtns) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHtml;
+  const footer = document.getElementById('modal-footer');
+  if (footerBtns && footerBtns.length) {
+    footer.style.display='flex';
+    footer.innerHTML = footerBtns.map(b=>`<button class="act-btn ${b.cls}" id="modal-footer-btn-${b.label}">${b.label}</button>`).join('');
+    footerBtns.forEach(b=>{ document.getElementById(`modal-footer-btn-${b.label}`).onclick=b.action; });
+  } else footer.style.display='none';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+document.getElementById('modal-overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-overlay'))closeModal(); });
+
+function openChallengeModal(id) {
+  const ch = allChallenges.find(c=>c.id===id);
+  if (!ch) return;
+  openModal(`Edit: ${ch.title}`, `
+    <div class="modal-section"><div class="modal-label">Title</div><input class="fc-input" id="edit-title" value="${escHtml(ch.title||'')}"></div>
+    <div class="modal-section"><div class="modal-label">Restaurant Name</div><input class="fc-input" id="edit-where" value="${escHtml(ch.where||'')}"></div>
+    <div class="modal-section"><div class="modal-label">Address</div><input class="fc-input" id="edit-address" value="${escHtml(ch.address||'')}"></div>
+    <div class="modal-section"><div class="modal-label">Phone</div><input class="fc-input" id="edit-phone" value="${escHtml(ch.phone||'')}"></div>
+    <div class="modal-section"><div class="modal-label">Website</div><input class="fc-input" id="edit-website" value="${escHtml(ch.website||'')}"></div>
+    <div style="display:flex;gap:8px">
+      <div class="modal-section" style="flex:1"><div class="modal-label">Price</div><input class="fc-input" id="edit-price" value="${escHtml(ch.price||'')}"></div>
+      <div class="modal-section" style="flex:1"><div class="modal-label">Weight</div><input class="fc-input" id="edit-weight" value="${escHtml(ch.weight||'')}"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="modal-section" style="flex:1"><div class="modal-label">Time Limit</div><input class="fc-input" id="edit-timeLimit" value="${escHtml(ch.timeLimit||'')}"></div>
+      <div class="modal-section" style="flex:1"><div class="modal-label">Difficulty (1-5)</div><input class="fc-input" id="edit-difficulty" type="number" min="1" max="5" value="${ch.difficulty||''}"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div class="modal-section" style="flex:1"><div class="modal-label">Latitude</div><input class="fc-input" id="edit-lat" value="${ch.lat||''}"></div>
+      <div class="modal-section" style="flex:1"><div class="modal-label">Longitude</div><input class="fc-input" id="edit-lng" value="${ch.lng||''}"></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">Verification Status</div>
+      <select class="fc-input" id="edit-verif">
+        <option value="user_submitted" ${ch.verificationStatus==='user_submitted'?'selected':''}>User Submitted (Unverified)</option>
+        <option value="business_submitted" ${ch.verificationStatus==='business_submitted'?'selected':''}>Business Submitted</option>
+        <option value="verified" ${ch.verificationStatus==='verified'?'selected':''}>Verified</option>
+        <option value="admin_verified" ${ch.verificationStatus==='admin_verified'?'selected':''}>Admin Verified</option>
+      </select>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">Add Photos</div>
+      <input type="file" id="edit-photos" accept="image/*" multiple style="font-size:13px;color:var(--text2)">
+    </div>
+    ${ch.photos&&ch.photos.length?`<div class="modal-section"><div class="modal-label">Current Photos</div><div class="photo-strip">${ch.photos.map(p=>`<img src="${p}" onclick="window.open('${p}')">`).join('')}</div></div>`:''}
+    <div class="modal-section"><div class="modal-label">Description</div><textarea class="fc-input" id="edit-desc" rows="4">${escHtml(ch.description||'')}</textarea></div>
+    <div id="edit-error" class="form-error"></div>
+  `, [
+    { label:'Save Changes', cls:'act-approve', action:()=>saveChallengeEdit(id) },
+    { label:'Delete', cls:'act-delete', action:()=>{ closeModal(); deleteChallenge(id); } },
+    { label:'Cancel', cls:'act-edit', action:closeModal }
+  ]);
+}
+
+async function saveChallengeEdit(id) {
+  const fd = new FormData();
+  const fields = { title:'edit-title',where:'edit-where',address:'edit-address',phone:'edit-phone',
+    website:'edit-website',price:'edit-price',weight:'edit-weight',timeLimit:'edit-timeLimit',
+    difficulty:'edit-difficulty',lat:'edit-lat',lng:'edit-lng',verificationStatus:'edit-verif',description:'edit-desc' };
+  for(const[k,elId] of Object.entries(fields)) {
+    const el=document.getElementById(elId);
+    if(el) fd.append(k, el.value);
+  }
+  const files=document.getElementById('edit-photos')?.files||[];
+  for(const f of files) fd.append('photos',f);
+  const res=await fetch(`/api/challenges/${id}`,{method:'PATCH',body:fd});
+  const data=await res.json();
+  if(!data.ok){document.getElementById('edit-error').textContent=data.error;return;}
+  closeModal();await refreshAll();showPage('challenges');
+}
+
+function openUserModal(id) {
+  const u = allUsers.find(u=>u.id===id);
+  if (!u) return;
+  openModal(`Edit User: ${u.username}`, `
+    <div style="background:var(--surface2);border-radius:var(--rsm);padding:12px;margin-bottom:12px;font-size:13px">
+      <div><strong>Email:</strong> ${escHtml(u.email)}</div>
+      ${u.businessName?`<div><strong>Business:</strong> ${escHtml(u.businessName)}</div>`:''}
+      ${u.businessPhone?`<div><strong>Phone:</strong> ${escHtml(u.businessPhone)}</div>`:''}
+      ${u.businessAddress?`<div><strong>Address:</strong> ${escHtml(u.businessAddress)}</div>`:''}
+      <div><strong>Joined:</strong> ${fmtDate(u.createdAt)}</div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">Role</div>
+      <select class="fc-input" id="edit-user-role">
+        <option value="user" ${u.role==='user'?'selected':''}>User</option>
+        <option value="business" ${u.role==='business'?'selected':''}>Business</option>
+        <option value="business_pending" ${u.role==='business_pending'?'selected':''}>Business (Pending)</option>
+        <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+      </select>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">Status</div>
+      <select class="fc-input" id="edit-user-approved">
+        <option value="true" ${u.approved?'selected':''}>Active</option>
+        <option value="false" ${!u.approved?'selected':''}>Pending / Suspended</option>
+      </select>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">New Password (leave blank to keep)</div>
+      <input class="fc-input" id="edit-user-pw" type="password" placeholder="New password…">
+    </div>
+    <div id="edit-user-error" class="form-error"></div>
+  `, [
+    { label:'Save', cls:'act-approve', action:()=>saveUserEdit(id) },
+    { label:'Cancel', cls:'act-edit', action:closeModal }
+  ]);
+}
+
+async function saveUserEdit(id) {
+  const body = {
+    role: document.getElementById('edit-user-role').value,
+    approved: document.getElementById('edit-user-approved').value,
+  };
+  const pw = document.getElementById('edit-user-pw').value;
+  if (pw) body.password = pw;
+  const res = await fetch(`/api/users/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  const data = await res.json();
+  if (!data.ok) { document.getElementById('edit-user-error').textContent=data.error; return; }
+  closeModal(); await refreshAll(); showPage('users');
+}
+
+init();
+</script>
+</body>
+</html>
