@@ -298,6 +298,13 @@
 <script src="shared.js"></script>
 <script>
 const API = 'https://lavonia-cliquy-daniela.ngrok-free.dev';
+// Wrapper around fetch that always hits the API host and skips ngrok's
+// free-tier browser warning interstitial (which has no CORS headers and
+// otherwise breaks every request made from a real browser).
+function apiFetch(path, opts = {}) {
+  const headers = { 'ngrok-skip-browser-warning': 'true', ...(opts.headers || {}) };
+  return fetch(`${API}${path}`, { ...opts, headers });
+}
 const DARK = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
@@ -337,7 +344,7 @@ async function loadAll() {
     }));
 
     // DB challenges (community submitted + business)
-    const dbRes = await fetch(`${API}/api/challenges`,{credentials:'include'});
+    const dbRes = await apiFetch(`/api/challenges`,{credentials:'include'});
     const dbData = await dbRes.json();
     const dbChallenges = dbData.challenges || [];
 
@@ -358,7 +365,7 @@ async function loadAll() {
 }
 
 async function initAuth() {
-  const res = await fetch(`${API}/api/auth/me`,{credentials:'include'});
+  const res = await apiFetch(`/api/auth/me`,{credentials:'include'});
   const data = await res.json();
   currentUser = data.user;
   updateAccountBtn();
@@ -371,13 +378,13 @@ async function initAuth() {
 
 async function loadMyCompletions() {
   if (!currentUser) return;
-  const res = await fetch(`${API}/api/completions/me`,{credentials:'include'});
+  const res = await apiFetch(`/api/completions/me`,{credentials:'include'});
   const data = await res.json();
   myCompletions = new Set((data.completions || []).map(c => c.challengeId));
 }
 
 async function loadNotifications() {
-  const res = await fetch(`${API}/api/notifications`,{credentials:'include'});
+  const res = await apiFetch(`/api/notifications`,{credentials:'include'});
   const data = await res.json();
   const notes = data.notifications || [];
   const unread = notes.filter(n => !n.read).length;
@@ -543,7 +550,7 @@ async function doCompletion() {
   fd.append('isJsonChallenge', currentDetail._source==='json'?'true':'false');
   const files=document.getElementById('comp-photos').files;
   for(const f of files) fd.append('photos', f);
-  const res=await fetch(`${API}/api/completions`,{method:'POST',body:fd,credentials:'include'});
+  const res=await apiFetch(`/api/completions`,{method:'POST',body:fd,credentials:'include'});
   const data=await res.json();
   if(!data.ok){document.getElementById('comp-error').textContent=data.error;return;}
   myCompletions.add(currentDetail.id||currentDetail.link);
@@ -572,7 +579,7 @@ async function doSubmit(){
   if(!fd.get('title')||!fd.get('address')){document.getElementById('sub-error').textContent='Title and address are required';return;}
   const files=document.getElementById('sub-photos').files;
   for(const f of files) fd.append('photos',f);
-  const res=await fetch(`${API}/api/challenges/submit`,{method:'POST',body:fd,credentials:'include'});
+  const res=await apiFetch(`/api/challenges/submit`,{method:'POST',body:fd,credentials:'include'});
   const data=await res.json();
   if(!data.ok){document.getElementById('sub-error').textContent=data.error;return;}
   document.getElementById('submit-modal').classList.remove('open');
@@ -600,7 +607,7 @@ function setRole(r){
 async function doLogin(){
   const email=document.getElementById('login-email').value;
   const password=document.getElementById('login-password').value;
-  const res=await fetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email,password})});
+  const res=await apiFetch(`/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email,password})});
   const data=await res.json();
   if(!data.ok){document.getElementById('login-error').textContent=data.error;return;}
   currentUser=data.user;updateAccountBtn();closeAuth();
@@ -617,7 +624,7 @@ async function doRegister(){
     businessPhone:document.getElementById('reg-biz-phone').value,
     businessAddress:document.getElementById('reg-biz-address').value,
   };
-  const res=await fetch(`${API}/api/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});
+  const res=await apiFetch(`/api/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});
   const data=await res.json();
   if(!data.ok){document.getElementById('reg-error').textContent=data.error;return;}
   if(data.pending){closeAuth();alert(data.message);return;}
@@ -652,14 +659,14 @@ function showAccountMenu(){
   document.body.appendChild(menu);
 }
 async function doLogout(){
-  await fetch(`${API}/api/auth/logout`,{method:'POST',credentials:'include'});
+  await apiFetch(`/api/auth/logout`,{method:'POST',credentials:'include'});
   currentUser=null;updateAccountBtn();
   document.getElementById('notif-btn').style.display='none';
   document.querySelectorAll('[style*=fixed]').forEach(e=>e.remove());
   render();
 }
 async function showMyCompletions(){
-  const res=await fetch(`${API}/api/completions/me`,{credentials:'include'});
+  const res=await apiFetch(`/api/completions/me`,{credentials:'include'});
   const data=await res.json();
   const completions=data.completions||[];
   const menu=document.createElement('div');
@@ -686,7 +693,7 @@ async function showMyCompletions(){
 document.getElementById('notif-btn').addEventListener('click',async()=>{
   const panel=document.getElementById('notif-panel');
   if(panel.classList.toggle('open')){
-    await fetch(`${API}/api/notifications/read`,{method:'POST',credentials:'include'});
+    await apiFetch(`/api/notifications/read`,{method:'POST',credentials:'include'});
     document.getElementById('notif-dot').style.display='none';
     loadNotifications();
   }
