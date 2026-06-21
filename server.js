@@ -28,10 +28,10 @@ db.defaults({
 // ── File uploads ─────────────────────────────────────────────────────────────
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/photos'),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, uuid() + ext);
-  }
+                                   filename: (req, file, cb) => {
+                                     const ext = path.extname(file.originalname).toLowerCase();
+                                     cb(null, uuid() + ext);
+                                   }
 });
 const upload = multer({
   storage,
@@ -45,8 +45,8 @@ const upload = multer({
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors({
   origin: true,        // reflect request origin (needed since you're serving the
-                        // frontend from a different host than the API now)
-  credentials: true     // allow the session cookie to be sent/received cross-origin
+             // frontend from a different host than the API now)
+             credentials: true     // allow the session cookie to be sent/received cross-origin
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -93,13 +93,13 @@ app.post('/api/auth/register', async (req, res) => {
   const hash = await bcrypt.hash(password, 12);
   const user = {
     id: uuid(), username, email, password: hash,
-    role: requestedRole,
-    businessName: businessName || null,
-    businessPhone: businessPhone || null,
-    businessAddress: businessAddress || null,
-    approved: requestedRole === 'user',
-    createdAt: Date.now(),
-    completions: [],
+         role: requestedRole,
+         businessName: businessName || null,
+         businessPhone: businessPhone || null,
+         businessAddress: businessAddress || null,
+         approved: requestedRole === 'user',
+         createdAt: Date.now(),
+         completions: [],
   };
 
   // First user ever becomes admin
@@ -156,22 +156,22 @@ app.post('/api/challenges/submit', requireAuth, upload.array('photos', 6), async
 
   const challenge = {
     id: uuid(),
-    title, where, address, phone, website,
-    type, price, weight, timeLimit, description,
-    lat: parseFloat(lat) || null,
-    lng: parseFloat(lng) || null,
-    photos,
-    imgSrc: photos[0] || null,
-    submittedBy: user.id,
-    submittedByUsername: user.username,
-    submittedByRole: user.role,
-    status: 'pending',          // pending | approved | rejected
-    verificationStatus: 'user_submitted',  // user_submitted | verified | admin_verified
-    difficulty: null,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    completionCount: 0,
-    rejectionReason: null,
+         title, where, address, phone, website,
+         type, price, weight, timeLimit, description,
+         lat: parseFloat(lat) || null,
+         lng: parseFloat(lng) || null,
+         photos,
+         imgSrc: photos[0] || null,
+         submittedBy: user.id,
+         submittedByUsername: user.username,
+         submittedByRole: user.role,
+         status: 'pending',          // pending | approved | rejected
+         verificationStatus: 'user_submitted',  // user_submitted | verified | admin_verified
+         difficulty: null,
+         createdAt: Date.now(),
+         updatedAt: Date.now(),
+         completionCount: 0,
+         rejectionReason: null,
   };
 
   // Businesses skip to approved but still show as unverified until admin verifies
@@ -187,10 +187,10 @@ app.post('/api/challenges/submit', requireAuth, upload.array('photos', 6), async
   admins.forEach(a => {
     db.get('notifications').push({
       id: uuid(), userId: a.id,
-      type: 'new_submission',
-      message: `New challenge submitted: "${title}" by ${user.username}`,
-      challengeId: challenge.id,
-      read: false, createdAt: Date.now()
+                                 type: 'new_submission',
+                                 message: `New challenge submitted: "${title}" by ${user.username}`,
+                                 challengeId: challenge.id,
+                                 read: false, createdAt: Date.now()
     }).write();
   });
 
@@ -201,9 +201,9 @@ app.post('/api/challenges/submit', requireAuth, upload.array('photos', 6), async
 app.get('/api/challenges', (req, res) => {
   // DB submissions
   const dbChallenges = db.get('challenges')
-    .filter(c => c.status === 'approved')
-    .value()
-    .map(c => ({ ...c, _source: 'db' }));
+  .filter(c => c.status === 'approved')
+  .value()
+  .map(c => ({ ...c, _source: 'db' }));
 
   res.json({ ok: true, challenges: dbChallenges });
 });
@@ -249,14 +249,14 @@ app.post('/api/challenges/:id/review', requireAdmin, (req, res) => {
   const ch = c.value();
   db.get('notifications').push({
     id: uuid(), userId: ch.submittedBy,
-    type: action,
-    message: action === 'approve'
-      ? `Your challenge "${ch.title}" has been approved!`
-      : action === 'reject'
-        ? `Your challenge "${ch.title}" was not approved. ${reason || ''}`
-        : `Your challenge "${ch.title}" has been verified!`,
-    challengeId: ch.id,
-    read: false, createdAt: Date.now()
+                               type: action,
+                               message: action === 'approve'
+                               ? `Your challenge "${ch.title}" has been approved!`
+                               : action === 'reject'
+                               ? `Your challenge "${ch.title}" was not approved. ${reason || ''}`
+                               : `Your challenge "${ch.title}" has been verified!`,
+                               challengeId: ch.id,
+                               read: false, createdAt: Date.now()
   }).write();
 
   res.json({ ok: true });
@@ -297,12 +297,12 @@ app.post('/api/completions', requireAuth, upload.array('photos', 4), (req, res) 
   const photos = (req.files || []).map(f => `/uploads/photos/${f.filename}`);
   const completion = {
     id: uuid(),
-    userId: user.id, username: user.username,
-    challengeId, challengeTitle: challengeTitle || '',
-    notes: notes || '', time: time || null,
-    photos,
-    isJsonChallenge: isJsonChallenge === 'true',
-    createdAt: Date.now(),
+         userId: user.id, username: user.username,
+         challengeId, challengeTitle: challengeTitle || '',
+         notes: notes || '', time: time || null,
+         photos,
+         isJsonChallenge: isJsonChallenge === 'true',
+         createdAt: Date.now(),
   };
   db.get('completions').push(completion).write();
 
@@ -320,9 +320,9 @@ app.post('/api/completions', requireAuth, upload.array('photos', 4), (req, res) 
       if (owner && (owner.role === 'business' || owner.role === 'admin')) {
         db.get('notifications').push({
           id: uuid(), userId: owner.id,
-          type: 'completion',
-          message: `${user.username} completed your challenge "${ch.title}"!`,
-          challengeId, read: false, createdAt: Date.now()
+                                     type: 'completion',
+                                     message: `${user.username} completed your challenge "${ch.title}"!`,
+                                     challengeId, read: false, createdAt: Date.now()
         }).write();
       }
     }
@@ -357,6 +357,72 @@ app.delete('/api/completions/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Leaderboard ───────────────────────────────────────────────────────────────
+// Ranked by verified completions: a completion counts toward the leaderboard
+// once the underlying challenge has verificationStatus 'verified' or
+// 'admin_verified'. JSON-file challenges are treated as pre-verified.
+app.get('/api/leaderboard', (req, res) => {
+  const completions = db.get('completions').value();
+  const challenges = db.get('challenges').value();
+  const challengeById = {};
+  challenges.forEach(c => { challengeById[c.id] = c; });
+
+  let jsonChallenges = [];
+  try {
+    jsonChallenges = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'foodchallenges.json'), 'utf8'));
+  } catch (e) { jsonChallenges = []; }
+  const jsonByLink = {};
+  jsonChallenges.forEach(c => { if (c.link) jsonByLink[c.link] = c; });
+
+  function isVerifiedCompletion(comp) {
+    if (comp.isJsonChallenge) {
+      const jc = jsonByLink[comp.challengeId];
+      return !jc || (jc.verificationStatus || 'admin_verified') !== 'user_submitted';
+    }
+    const ch = challengeById[comp.challengeId];
+    if (!ch) return false;
+    return ch.verificationStatus === 'verified' || ch.verificationStatus === 'admin_verified';
+  }
+
+  const counts = {}; // userId -> { username, total, verified }
+  completions.forEach(comp => {
+    if (!counts[comp.userId]) counts[comp.userId] = { userId: comp.userId, username: comp.username, total: 0, verified: 0 };
+    counts[comp.userId].total += 1;
+    if (isVerifiedCompletion(comp)) counts[comp.userId].verified += 1;
+  });
+
+  const leaderboard = Object.values(counts)
+    .filter(u => u.verified > 0)
+    .sort((a, b) => b.verified - a.verified || b.total - a.total)
+    .slice(0, 100)
+    .map((u, i) => ({ rank: i + 1, ...u }));
+
+  res.json({ ok: true, leaderboard });
+});
+
+// ── Geocoding (city/town search) ────────────────────────────────────────────
+// Proxies to OpenStreetMap Nominatim so requests carry a proper User-Agent
+// per their usage policy, and so the browser doesn't need direct CORS access.
+app.get('/api/geocode', async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) return res.status(400).json({ error: 'Missing query' });
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'FoodChallengeFinder/1.0' } });
+    const results = await r.json();
+    res.json({
+      ok: true,
+      results: results.map(r => ({
+        label: r.display_name,
+        lat: parseFloat(r.lat),
+        lng: parseFloat(r.lon),
+      })),
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Geocoding failed' });
+  }
+});
+
 // ── Users (admin) ─────────────────────────────────────────────────────────────
 app.get('/api/users', requireAdmin, (req, res) => {
   const users = db.get('users').map(safeUser).value();
@@ -389,9 +455,9 @@ app.post('/api/users/:id/approve', requireAdmin, (req, res) => {
   u.assign({ approved: true, role: 'business' }).write();
   db.get('notifications').push({
     id: uuid(), userId: req.params.id,
-    type: 'account_approved',
-    message: 'Your business account has been approved! You can now submit challenges.',
-    read: false, createdAt: Date.now()
+                               type: 'account_approved',
+                               message: 'Your business account has been approved! You can now submit challenges.',
+                               read: false, createdAt: Date.now()
   }).write();
   res.json({ ok: true });
 });
@@ -415,11 +481,11 @@ app.get('/api/stats', requireAdmin, (req, res) => {
     ok: true,
     stats: {
       users: db.get('users').size().value(),
-      pendingUsers: db.get('users').filter({ approved: false }).size().value(),
-      challenges: db.get('challenges').size().value(),
-      pendingChallenges: db.get('challenges').filter({ status: 'pending' }).size().value(),
-      approvedChallenges: db.get('challenges').filter({ status: 'approved' }).size().value(),
-      completions: db.get('completions').size().value(),
+           pendingUsers: db.get('users').filter({ approved: false }).size().value(),
+           challenges: db.get('challenges').size().value(),
+           pendingChallenges: db.get('challenges').filter({ status: 'pending' }).size().value(),
+           approvedChallenges: db.get('challenges').filter({ status: 'approved' }).size().value(),
+           completions: db.get('completions').size().value(),
     }
   });
 });
