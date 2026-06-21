@@ -1,3 +1,9 @@
+function fcFetch(url, opts) {
+  opts = opts || {};
+  opts.credentials = 'include';
+  opts.headers = Object.assign({ 'ngrok-skip-browser-warning': '1' }, opts.headers || {});
+  return fetch(url, opts);
+}
 function timeAgo(ts) {
   const s = Math.floor((Date.now() - ts) / 1000);
   if (s < 60) return 'just now';
