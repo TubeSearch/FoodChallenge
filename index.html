@@ -6,8 +6,10 @@
 <title>Food Challenges</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 <link rel="stylesheet" href="shared.css">
 <style>
+:root{--tabbar-h:58px}
 #map{position:absolute;inset:0;z-index:0}
 #top-bar{position:absolute;top:max(env(safe-area-inset-top),12px);left:0;right:0;z-index:100;display:flex;align-items:center;gap:8px;padding:0 12px;pointer-events:none}
 #search-pill{background:var(--pill-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-radius:50px;padding:10px 16px;display:flex;align-items:center;gap:9px;box-shadow:var(--shadow);pointer-events:all;flex:1;min-width:0}
@@ -22,9 +24,9 @@
 #map-btns{position:absolute;right:14px;z-index:100;display:flex;flex-direction:column;gap:10px;transition:bottom .35s cubic-bezier(.32,.72,0,1)}
 .map-btn{width:42px;height:42px;border-radius:50%;background:var(--pill-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);color:var(--accent);transition:transform .15s}
 .map-btn:active{transform:scale(.92)}
-#dev-click-hint{display:none;position:absolute;bottom:0;left:0;right:0;z-index:150;padding:10px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;text-align:center}
+#dev-click-hint{display:none;position:absolute;bottom:var(--tabbar-h);left:0;right:0;z-index:150;padding:10px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;text-align:center}
 
-#sheet{position:absolute;left:0;right:0;bottom:0;z-index:200;background:var(--sheet-bg);backdrop-filter:blur(30px) saturate(200%);-webkit-backdrop-filter:blur(30px) saturate(200%);border-radius:var(--rlg) var(--rlg) 0 0;box-shadow:var(--shadow-heavy);touch-action:none}
+#sheet{position:absolute;left:0;right:0;bottom:var(--tabbar-h);z-index:200;background:var(--sheet-bg);backdrop-filter:blur(30px) saturate(200%);-webkit-backdrop-filter:blur(30px) saturate(200%);border-radius:var(--rlg) var(--rlg) 0 0;box-shadow:var(--shadow-heavy);touch-action:none}
 #sheet-handle-area{padding:10px 0 2px;display:flex;justify-content:center;cursor:grab;user-select:none}
 #sheet-handle-area:active{cursor:grabbing}
 #sheet-handle{width:36px;height:5px;background:var(--handle);border-radius:3px}
@@ -129,6 +131,43 @@
 .popup-sub{color:var(--text2);margin-bottom:4px}
 .popup-dist{color:var(--accent);font-size:12px;font-weight:600;margin-bottom:6px}
 .popup-open{color:var(--accent);font-weight:600;cursor:pointer;font-size:13px}
+
+/* Location search (city/town) */
+#loc-search-row{display:flex;gap:8px;padding:0 18px 12px}
+#loc-search-row .fc-input{flex:1}
+#loc-search-row button{flex-shrink:0}
+#loc-results{padding:0 18px 10px;display:flex;flex-direction:column;gap:4px}
+.loc-result{padding:9px 12px;background:var(--surface2);border-radius:var(--rsm);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.loc-result:active{background:var(--card-hover)}
+.loc-result i{color:var(--accent);flex-shrink:0}
+#current-loc-chip{display:none;align-items:center;gap:6px;padding:6px 12px;background:var(--accent-light);color:var(--accent);border-radius:20px;font-size:12px;font-weight:600;margin:0 18px 10px;width:fit-content}
+#current-loc-chip i.fa-xmark{cursor:pointer;opacity:.7}
+
+/* Directions button */
+#detail-directions-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);color:var(--accent);text-align:center;padding:13px;border-radius:var(--rmd);font-size:15px;font-weight:700;text-decoration:none;margin:0 16px 10px}
+#detail-directions-btn:active{opacity:.8}
+
+/* Bottom tab bar (Map / Leaderboard) */
+#bottom-tabs{position:absolute;left:0;right:0;bottom:0;z-index:250;display:flex;background:var(--pill-bg);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border-top:1px solid var(--border);padding:6px 0 max(env(safe-area-inset-bottom),6px)}
+.bottom-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;color:var(--text2);font-family:inherit;font-size:10px;font-weight:600;padding:6px 0}
+.bottom-tab i{font-size:18px}
+.bottom-tab.active{color:var(--accent)}
+
+/* Leaderboard panel */
+#leaderboard-panel{position:absolute;top:0;left:0;right:0;bottom:var(--tabbar-h);z-index:240;background:var(--bg);transform:translateX(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column}
+#leaderboard-panel.open{transform:translateX(0)}
+#lb-header{position:sticky;top:0;background:var(--sheet-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:max(env(safe-area-inset-top),12px) 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);z-index:1}
+#lb-title-hdr{font-size:18px;font-weight:800;flex:1}
+#lb-list{padding:10px 14px 90px}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border-radius:var(--rmd);margin-bottom:8px;box-shadow:var(--shadow)}
+.lb-rank{width:30px;text-align:center;font-size:15px;font-weight:800;color:var(--text2);flex-shrink:0}
+.lb-rank.gold{color:#ffd700}
+.lb-rank.silver{color:#c0c0c0}
+.lb-rank.bronze{color:#cd7f32}
+.lb-avatar{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0}
+.lb-name{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-count{font-size:15px;font-weight:800;color:var(--accent)}
+.lb-count-label{font-size:10px;color:var(--text2);font-weight:500;text-align:right}
 </style>
 </head>
 <body>
@@ -152,7 +191,7 @@
 
 <!-- Notifications panel -->
 <div id="notif-panel">
-  <div id="notif-header"><h3>Notifications</h3><button class="icon-btn" id="close-notif" style="background:var(--badge-bg);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button></div>
+  <div id="notif-header"><h3>Notifications</h3><button class="icon-btn" id="close-notif" style="background:var(--badge-bg);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px"><i class="fa-solid fa-xmark"></i></button></div>
   <div id="notif-list"><div style="padding:20px;text-align:center;color:var(--text2);font-size:14px">No notifications</div></div>
 </div>
 
@@ -165,11 +204,17 @@
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
 </div>
-<div id="dev-click-hint">📍 Click map to set location — press Esc to cancel</div>
+<div id="dev-click-hint"><i class="fa-solid fa-location-dot"></i> Click map to set location — press Esc to cancel</div>
 
 <!-- Bottom sheet -->
 <div id="sheet">
   <div id="sheet-handle-area"><div id="sheet-handle"></div></div>
+  <div id="loc-search-row">
+    <input class="fc-input" id="loc-search-input" type="text" placeholder="Search a city or town…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="icon-btn" id="loc-search-btn" title="Search location" style="width:42px;height:42px;background:var(--accent);color:#fff"><i class="fa-solid fa-magnifying-glass"></i></button>
+  </div>
+  <div id="loc-results"></div>
+  <div id="current-loc-chip"><i class="fa-solid fa-location-crosshairs"></i><span id="current-loc-label"></span><i class="fa-solid fa-xmark" id="clear-loc-btn" title="Clear"></i></div>
   <div id="radius-section">
     <div id="radius-row"><span id="radius-label">Search Radius</span><span id="radius-value">25 mi</span></div>
     <input id="radius-slider" type="range" min="1" max="500" value="25" step="1">
@@ -181,7 +226,7 @@
   </div>
   <div id="results-list">
     <div id="loading-state"><div class="spinner"></div><span>Loading…</span></div>
-    <div id="empty-state"><div class="icon">🍽️</div><div class="msg">No challenges found</div><div class="sub">Try expanding the search radius</div></div>
+    <div id="empty-state"><div class="icon"><i class="fa-solid fa-utensils"></i></div><div class="msg">No challenges found</div><div class="sub">Try expanding the search radius</div></div>
   </div>
 </div>
 
@@ -194,12 +239,27 @@
   <div id="detail-content"></div>
 </div>
 
+<!-- Leaderboard panel -->
+<div id="leaderboard-panel">
+  <div id="lb-header">
+    <i class="fa-solid fa-trophy" style="color:var(--star);font-size:18px"></i>
+    <div id="lb-title-hdr">Leaderboard</div>
+  </div>
+  <div id="lb-list"></div>
+</div>
+
+<!-- Bottom tabs -->
+<div id="bottom-tabs">
+  <button class="bottom-tab active" id="tab-map-btn"><i class="fa-solid fa-map-location-dot"></i>Map</button>
+  <button class="bottom-tab" id="tab-leaderboard-btn"><i class="fa-solid fa-trophy"></i>Leaderboard</button>
+</div>
+
 <!-- Auth modal -->
 <div id="auth-modal">
   <div id="auth-sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <h2 style="font-size:20px;font-weight:800">Welcome</h2>
-      <button onclick="closeAuth()" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--text2)">✕</button>
+      <button onclick="closeAuth()" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--text2)"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div id="auth-tabs">
       <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
@@ -238,7 +298,7 @@
   <div id="submit-sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <h2 style="font-size:20px;font-weight:800">Submit a Challenge</h2>
-      <button onclick="document.getElementById('submit-modal').classList.remove('open')" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--text2)">✕</button>
+      <button onclick="document.getElementById('submit-modal').classList.remove('open')" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--text2)"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px" id="submit-form">
       <input class="fc-input" id="sub-title" type="text" placeholder="Challenge Name *">
@@ -266,7 +326,7 @@
         <input class="fc-input" id="sub-lat" type="number" step="any" placeholder="Latitude" style="flex:1">
         <input class="fc-input" id="sub-lng" type="number" step="any" placeholder="Longitude" style="flex:1">
       </div>
-      <button class="fc-btn" style="background:var(--surface2);color:var(--text)" onclick="startSubmitLocPick()">📍 Pick Location on Map</button>
+      <button class="fc-btn" style="background:var(--surface2);color:var(--text);display:flex;align-items:center;justify-content:center;gap:8px" onclick="startSubmitLocPick()"><i class="fa-solid fa-location-dot"></i> Pick Location on Map</button>
       <div style="font-size:13px;color:var(--text2);font-weight:600">Photos (up to 6)</div>
       <input type="file" id="sub-photos" accept="image/*" multiple style="font-size:13px;color:var(--text2)">
       <div id="sub-error" class="form-error"></div>
@@ -280,8 +340,8 @@
 <div id="completion-modal">
   <div id="completion-sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h2 style="font-size:20px;font-weight:800">Log Completion 🏆</h2>
-      <button onclick="document.getElementById('completion-modal').classList.remove('open')" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px;color:var(--text2)">✕</button>
+      <h2 style="font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px">Log Completion <i class="fa-solid fa-trophy" style="color:var(--star)"></i></h2>
+      <button onclick="document.getElementById('completion-modal').classList.remove('open')" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--text2)"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px">
       <div id="completion-challenge-name" style="font-size:15px;font-weight:700;color:var(--accent)"></div>
@@ -298,26 +358,12 @@
 <script src="shared.js"></script>
 <script>
 const API = 'https://lavonia-cliquy-daniela.ngrok-free.dev';
-// Wrapper around fetch that always hits the API host and skips ngrok's
-// free-tier browser warning interstitial (which has no CORS headers and
-// otherwise breaks every request made from a real browser).
-function apiFetch(path, opts = {}) {
-  const headers = { 'ngrok-skip-browser-warning': 'true', ...(opts.headers || {}) };
-  return fetch(`${API}${path}`, { ...opts, headers });
-}
-// Resolves an image path for display. JSON-sourced challenges already have
-// full external URLs (https://...); DB-submitted challenges have server-
-// relative paths (/uploads/photos/...) that need the API host prefixed.
-function imgUrl(p) {
-  if (!p) return p;
-  return /^https?:\/\//i.test(p) ? p : `${API}${p}`;
-}
 const DARK = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const TILE_ATTR  = '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>';
 
-let allChallenges = [], userLat = null, userLng = null;
+let allChallenges = [], userLat = null, userLng = null, locationLabel = null;
 let radiusMiles = 25, searchQuery = '', sortMode = 'distance', filterType = '';
 let markerLayer, radiusCircle = null, userMarker = null;
 let clickingMap = false, clickingForSubmit = false;
@@ -351,7 +397,7 @@ async function loadAll() {
     }));
 
     // DB challenges (community submitted + business)
-    const dbRes = await apiFetch(`/api/challenges`,{credentials:'include'});
+    const dbRes = await fcFetch(`${API}/api/challenges`);
     const dbData = await dbRes.json();
     const dbChallenges = dbData.challenges || [];
 
@@ -367,12 +413,12 @@ async function loadAll() {
     tryGeolocate();
     render();
   } catch(e) {
-    document.getElementById('loading-state').innerHTML = `<div style="color:var(--text2);padding:20px;text-align:center;font-size:14px">⚠️ ${e.message}</div>`;
+    document.getElementById('loading-state').innerHTML = `<div style="color:var(--text2);padding:20px;text-align:center;font-size:14px"><i class="fa-solid fa-triangle-exclamation"></i> ${e.message}</div>`;
   }
 }
 
 async function initAuth() {
-  const res = await apiFetch(`/api/auth/me`,{credentials:'include'});
+  const res = await fcFetch(`${API}/api/auth/me`);
   const data = await res.json();
   currentUser = data.user;
   updateAccountBtn();
@@ -385,13 +431,13 @@ async function initAuth() {
 
 async function loadMyCompletions() {
   if (!currentUser) return;
-  const res = await apiFetch(`/api/completions/me`,{credentials:'include'});
+  const res = await fcFetch(`${API}/api/completions/me`);
   const data = await res.json();
   myCompletions = new Set((data.completions || []).map(c => c.challengeId));
 }
 
 async function loadNotifications() {
-  const res = await apiFetch(`/api/notifications`,{credentials:'include'});
+  const res = await fcFetch(`${API}/api/notifications`);
   const data = await res.json();
   const notes = data.notifications || [];
   const unread = notes.filter(n => !n.read).length;
@@ -409,18 +455,59 @@ async function loadNotifications() {
 // ── Geo ───────────────────────────────────────────────────────────────────────
 function tryGeolocate() {
   if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(p => setUserLocation(p.coords.latitude, p.coords.longitude), ()=>{}, { enableHighAccuracy:true, timeout:8000 });
+  navigator.geolocation.getCurrentPosition(p => setUserLocation(p.coords.latitude, p.coords.longitude, 'My Location'), ()=>{}, { enableHighAccuracy:true, timeout:8000 });
 }
-function setUserLocation(lat, lng) {
-  userLat=lat; userLng=lng;
+function setUserLocation(lat, lng, label) {
+  userLat=lat; userLng=lng; locationLabel=label||null;
   if (userMarker) map.removeLayer(userMarker);
   userMarker = L.circleMarker([lat,lng],{radius:9,fillColor:'#007aff',fillOpacity:1,color:'#fff',weight:3}).addTo(map);
   map.setView([lat,lng],10,{animate:true});
+  updateLocChip();
   render();
 }
+function updateLocChip() {
+  const chip = document.getElementById('current-loc-chip');
+  if (userLat===null) { chip.style.display='none'; return; }
+  chip.style.display = 'flex';
+  document.getElementById('current-loc-label').textContent = locationLabel || `${userLat.toFixed(3)}, ${userLng.toFixed(3)}`;
+}
 document.getElementById('locate-btn').addEventListener('click', () => {
-  navigator.geolocation.getCurrentPosition(p => setUserLocation(p.coords.latitude,p.coords.longitude), ()=>alert('Could not get location'), {enableHighAccuracy:true,timeout:10000});
+  navigator.geolocation.getCurrentPosition(p => setUserLocation(p.coords.latitude,p.coords.longitude,'My Location'), ()=>alert('Could not get location'), {enableHighAccuracy:true,timeout:10000});
 });
+document.getElementById('clear-loc-btn').addEventListener('click', () => {
+  userLat=null; userLng=null; locationLabel=null;
+  if (userMarker) { map.removeLayer(userMarker); userMarker=null; }
+  updateLocChip();
+  render();
+});
+
+// ── City/town search (geocoding) ────────────────────────────────────────────
+const locSearchInput = document.getElementById('loc-search-input');
+const locResultsEl = document.getElementById('loc-results');
+async function doLocSearch() {
+  const q = locSearchInput.value.trim();
+  if (!q) return;
+  locResultsEl.innerHTML = `<div style="padding:10px;color:var(--text2);font-size:13px;display:flex;align-items:center;gap:8px"><div class="spinner" style="width:16px;height:16px;border-width:2px"></div>Searching…</div>`;
+  try {
+    const res = await fcFetch(`${API}/api/geocode?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    const results = data.results || [];
+    if (!results.length) { locResultsEl.innerHTML = `<div style="padding:10px;color:var(--text2);font-size:13px">No matches found</div>`; return; }
+    locResultsEl.innerHTML = results.map((r,i) => `<div class="loc-result" data-i="${i}"><i class="fa-solid fa-location-dot"></i><span>${r.label}</span></div>`).join('');
+    locResultsEl.querySelectorAll('.loc-result').forEach(el => {
+      el.addEventListener('click', () => {
+        const r = results[+el.dataset.i];
+        setUserLocation(r.lat, r.lng, r.label.split(',')[0]);
+        locResultsEl.innerHTML = '';
+        locSearchInput.value = '';
+      });
+    });
+  } catch(e) {
+    locResultsEl.innerHTML = `<div style="padding:10px;color:var(--danger);font-size:13px">Search failed — try again</div>`;
+  }
+}
+document.getElementById('loc-search-btn').addEventListener('click', doLocSearch);
+locSearchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLocSearch(); });
 
 // ── Distance ──────────────────────────────────────────────────────────────────
 function distMi(la1,ln1,la2,ln2) {
@@ -457,7 +544,7 @@ function render() {
     cm.bindPopup(()=>{
       const d=document.createElement('div');
       d.innerHTML=`<div class="popup-title">${c.title||'Challenge'}</div><div class="popup-sub">${c.where||''}</div>${c._dist!=null?`<div class="popup-dist">${c._dist.toFixed(1)} mi away</div>`:''}${verificationBadgeHtml(c.verificationStatus)}`;
-      const btn=document.createElement('div');btn.className='popup-open';btn.textContent='View Details →';
+      const btn=document.createElement('div');btn.className='popup-open';btn.textContent='View Details ›';
       btn.onclick=()=>{map.closePopup();openDetail(c);};d.appendChild(btn);return d;
     });
     markerLayer.addLayer(cm);
@@ -476,7 +563,7 @@ function render() {
       const stars=c.difficulty?'★'.repeat(c.difficulty)+'☆'.repeat(5-c.difficulty):'';
       const done=myCompletions.has(c.id||c.link);
       card.innerHTML=`
-        ${c.imgSrc?`<img class="card-img" src="${imgUrl(c.imgSrc)}" loading="lazy" onerror="this.outerHTML='<div class=\\'card-img-ph\\'>🍽️</div>'">`:`<div class="card-img-ph">🍽️</div>`}
+        ${c.imgSrc?`<img class="card-img" src="${API}${c.imgSrc}" loading="lazy" onerror="this.outerHTML='<div class=\\'card-img-ph\\'><i class=\\'fa-solid fa-utensils\\'></i></div>'">`:`<div class="card-img-ph"><i class="fa-solid fa-utensils"></i></div>`}
         <div class="card-body">
           <div class="card-title">${c.title||'Unknown Challenge'}</div>
           <div class="card-where">${c.where||c.address||''}</div>
@@ -485,7 +572,7 @@ function render() {
             ${stars?`<span class="stars">${stars}</span>`:''}
             ${c.type?`<span class="badge">${c.type}</span>`:''}
             ${c.price?`<span class="badge badge-accent">${c.price}</span>`:''}
-            ${done?`<span class="badge" style="background:#e5ffe8;color:#34c759">✓ Done</span>`:''}
+            ${done?`<span class="badge" style="background:#e5ffe8;color:#34c759"><i class="fa-solid fa-check"></i> Done</span>`:''}
           </div>
         </div>
         ${c._dist!=null?`<div class="card-dist">${c._dist.toFixed(1)} mi</div>`:''}
@@ -498,10 +585,10 @@ function render() {
 }
 
 function verificationBadgeHtml(status) {
-  if(status==='admin_verified') return `<span class="badge" style="background:#e5f0ff;color:#007aff">✓ Verified</span>`;
-  if(status==='verified') return `<span class="badge" style="background:#e5ffe8;color:#34c759">✓ Verified</span>`;
-  if(status==='business_submitted') return `<span class="badge" style="background:#fff3e0;color:#ff9500">🏪 Business</span>`;
-  return `<span class="badge" style="background:#f5e5ff;color:#af52de">👤 Unverified</span>`;
+  if(status==='admin_verified') return `<span class="badge" style="background:#e5f0ff;color:#007aff"><i class="fa-solid fa-check"></i> Verified</span>`;
+  if(status==='verified') return `<span class="badge" style="background:#e5ffe8;color:#34c759"><i class="fa-solid fa-check"></i> Verified</span>`;
+  if(status==='business_submitted') return `<span class="badge" style="background:#fff3e0;color:#ff9500"><i class="fa-solid fa-store"></i> Business</span>`;
+  return `<span class="badge" style="background:#f5e5ff;color:#af52de"><i class="fa-solid fa-user"></i> Unverified</span>`;
 }
 
 // ── Detail ────────────────────────────────────────────────────────────────────
@@ -510,30 +597,34 @@ function openDetail(c) {
   document.getElementById('detail-title-hdr').textContent=c.where||'Details';
   const stars=c.difficulty?'★'.repeat(c.difficulty)+'☆'.repeat(5-c.difficulty):null;
   const rows=[
-    c.address  &&['📍','Address',c.address],
-    c.phone    &&['📞','Phone',`<a href="tel:${c.phone}">${c.phone}</a>`],
-    c.website  &&['🌐','Website',`<a href="${c.website}" target="_blank" rel="noopener">Visit website</a>`],
-    c.type     &&['🍽️','Type',c.type],
-    c.price    &&['💰','Price',c.price],
-    c.weight   &&['⚖️','Weight',c.weight],
-    c.timeLimit&&['⏱️','Time Limit',c.timeLimit],
-    stars      &&['⭐','Difficulty',`<span class="stars" style="font-size:14px">${stars}</span>`],
-    c.completionCount&&['🏆','Completions',c.completionCount],
+    c.address  &&['fa-location-dot','Address',c.address],
+    c.phone    &&['fa-phone','Phone',`<a href="tel:${c.phone}">${c.phone}</a>`],
+    c.website  &&['fa-globe','Website',`<a href="${c.website}" target="_blank" rel="noopener">Visit website</a>`],
+    c.type     &&['fa-utensils','Type',c.type],
+    c.price    &&['fa-sack-dollar','Price',c.price],
+    c.weight   &&['fa-weight-hanging','Weight',c.weight],
+    c.timeLimit&&['fa-stopwatch','Time Limit',c.timeLimit],
+    stars      &&['fa-star','Difficulty',`<span class="stars" style="font-size:14px">${stars}</span>`],
+    c.completionCount&&['fa-trophy','Completions',c.completionCount],
   ].filter(Boolean);
   const extraPhotos=(c.photos||[]).slice(1);
   const done=myCompletions.has(c.id||c.link);
+  const directionsUrl = (c.lat && c.lng)
+    ? `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`
+    : (c.address ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(c.address)}` : null);
   document.getElementById('detail-content').innerHTML=`
-    ${c.imgSrc?`<div id="detail-hero-wrap"><img id="detail-hero" src="${imgUrl(c.imgSrc)}" alt=""></div>`:''}
-    ${extraPhotos.length?`<div class="detail-photos">${extraPhotos.map(p=>`<img src="${imgUrl(p)}" onclick="window.open(imgUrl(p))">`).join('')}</div>`:''}
+    ${c.imgSrc?`<div id="detail-hero-wrap"><img id="detail-hero" src="${API}${c.imgSrc}" alt=""></div>`:''}
+    ${extraPhotos.length?`<div class="detail-photos">${extraPhotos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:''}
     <div id="detail-body">
       <div id="detail-name">${c.title||'Challenge'}</div>
       <div id="detail-where">${c.where||''} ${c.location?'· '+c.location:''}</div>
       <div id="detail-badges">${verificationBadgeHtml(c.verificationStatus)}</div>
-      <div class="detail-section">${rows.map(([icon,key,val])=>`<div class="detail-row"><div class="detail-icon">${icon}</div><div class="detail-key">${key}</div><div class="detail-val">${val}</div></div>`).join('')}</div>
+      <div class="detail-section">${rows.map(([icon,key,val])=>`<div class="detail-row"><div class="detail-icon"><i class="fa-solid ${icon}"></i></div><div class="detail-key">${key}</div><div class="detail-val">${val}</div></div>`).join('')}</div>
       ${c.description?`<div id="detail-desc">${c.description}</div>`:''}
     </div>
-    ${c.link?`<a id="detail-open-btn" href="${c.link}" target="_blank" rel="noopener">View Full Listing ↗</a>`:''}
-    <button id="complete-btn" class="${done?'done':''}" onclick="openCompletion()">${done?'✓ Completed!':'Mark as Completed'}</button>
+    ${directionsUrl?`<a id="detail-directions-btn" href="${directionsUrl}" target="_blank" rel="noopener"><i class="fa-solid fa-diamond-turn-right"></i> Get Directions</a>`:''}
+    ${c.link?`<a id="detail-open-btn" href="${c.link}" target="_blank" rel="noopener">View Full Listing <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:12px"></i></a>`:''}
+    <button id="complete-btn" class="${done?'done':''}" onclick="openCompletion()">${done?'<i class="fa-solid fa-check"></i> Completed!':'Mark as Completed'}</button>
   `;
   document.getElementById('detail-panel').classList.add('open');
 }
@@ -557,7 +648,7 @@ async function doCompletion() {
   fd.append('isJsonChallenge', currentDetail._source==='json'?'true':'false');
   const files=document.getElementById('comp-photos').files;
   for(const f of files) fd.append('photos', f);
-  const res=await apiFetch(`/api/completions`,{method:'POST',body:fd,credentials:'include'});
+  const res=await fcFetch(`${API}/api/completions`,{method:'POST',body:fd});
   const data=await res.json();
   if(!data.ok){document.getElementById('comp-error').textContent=data.error;return;}
   myCompletions.add(currentDetail.id||currentDetail.link);
@@ -586,7 +677,7 @@ async function doSubmit(){
   if(!fd.get('title')||!fd.get('address')){document.getElementById('sub-error').textContent='Title and address are required';return;}
   const files=document.getElementById('sub-photos').files;
   for(const f of files) fd.append('photos',f);
-  const res=await apiFetch(`/api/challenges/submit`,{method:'POST',body:fd,credentials:'include'});
+  const res=await fcFetch(`${API}/api/challenges/submit`,{method:'POST',body:fd});
   const data=await res.json();
   if(!data.ok){document.getElementById('sub-error').textContent=data.error;return;}
   document.getElementById('submit-modal').classList.remove('open');
@@ -614,7 +705,7 @@ function setRole(r){
 async function doLogin(){
   const email=document.getElementById('login-email').value;
   const password=document.getElementById('login-password').value;
-  const res=await apiFetch(`/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email,password})});
+  const res=await fcFetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
   const data=await res.json();
   if(!data.ok){document.getElementById('login-error').textContent=data.error;return;}
   currentUser=data.user;updateAccountBtn();closeAuth();
@@ -631,7 +722,7 @@ async function doRegister(){
     businessPhone:document.getElementById('reg-biz-phone').value,
     businessAddress:document.getElementById('reg-biz-address').value,
   };
-  const res=await apiFetch(`/api/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});
+  const res=await fcFetch(`${API}/api/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const data=await res.json();
   if(!data.ok){document.getElementById('reg-error').textContent=data.error;return;}
   if(data.pending){closeAuth();alert(data.message);return;}
@@ -654,10 +745,9 @@ function showAccountMenu(){
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">${currentUser.username}</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:16px">${currentUser.email} · <span style="color:var(--accent)">${currentUser.role}</span></div>
     <div style="display:flex;flex-direction:column;gap:8px">
-      ${isAdmin?`<button class="fc-btn" onclick="window.location='/admin.html'" style="background:var(--surface2);color:var(--text)">⚙️ Admin Panel</button>`:''}
-      <button class="fc-btn" onclick="window.location='/admin.html'" style="background:var(--surface2);color:var(--text);display:${isAdmin?'none':'none'}"></button>
-      <button class="fc-btn" style="background:var(--surface2);color:var(--text)" onclick="this.closest('div[style*=fixed]').remove();showMyCompletions()">🏆 My Completions</button>
-      ${isAdmin||isBiz?`<button class="fc-btn" style="background:var(--surface2);color:var(--text)" onclick="window.location='/admin.html'">📊 Dashboard</button>`:''}
+      ${isAdmin?`<button class="fc-btn" onclick="window.location='/admin.html'" style="background:var(--surface2);color:var(--text);display:flex;align-items:center;justify-content:center;gap:8px"><i class="fa-solid fa-gear"></i> Admin Panel</button>`:isBiz?`<button class="fc-btn" onclick="window.location='/admin.html'" style="background:var(--surface2);color:var(--text);display:flex;align-items:center;justify-content:center;gap:8px"><i class="fa-solid fa-chart-line"></i> Dashboard</button>`:''}
+      <button class="fc-btn" style="background:var(--surface2);color:var(--text);display:flex;align-items:center;justify-content:center;gap:8px" onclick="this.closest('div[style*=fixed]').remove();showMyCompletions()"><i class="fa-solid fa-trophy" style="color:var(--star)"></i> My Completions</button>
+      <button class="fc-btn" style="background:var(--surface2);color:var(--text);display:flex;align-items:center;justify-content:center;gap:8px" onclick="this.closest('div[style*=fixed]').remove();switchToLeaderboardTab()"><i class="fa-solid fa-ranking-star"></i> Leaderboard</button>
       <button class="fc-btn" style="background:#fff0f0;color:#ff3b30" onclick="doLogout()">Sign Out</button>
       <button class="fc-btn" style="background:var(--surface2);color:var(--text2)" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
     </div>
@@ -666,30 +756,30 @@ function showAccountMenu(){
   document.body.appendChild(menu);
 }
 async function doLogout(){
-  await apiFetch(`/api/auth/logout`,{method:'POST',credentials:'include'});
+  await fcFetch(`${API}/api/auth/logout`,{method:'POST'});
   currentUser=null;updateAccountBtn();
   document.getElementById('notif-btn').style.display='none';
   document.querySelectorAll('[style*=fixed]').forEach(e=>e.remove());
   render();
 }
 async function showMyCompletions(){
-  const res=await apiFetch(`/api/completions/me`,{credentials:'include'});
+  const res=await fcFetch(`${API}/api/completions/me`);
   const data=await res.json();
   const completions=data.completions||[];
   const menu=document.createElement('div');
   menu.style.cssText='position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.4);backdrop-filter:blur(4px)';
   menu.innerHTML=`<div style="background:var(--sheet-bg);border-radius:var(--rlg) var(--rlg) 0 0;width:100%;max-width:480px;padding:20px 16px max(env(safe-area-inset-bottom),24px);max-height:80vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h2 style="font-size:18px;font-weight:800">🏆 My Completions (${completions.length})</h2>
-      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer">✕</button>
+      <h2 style="font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px"><i class="fa-solid fa-trophy" style="color:var(--star)"></i> My Completions (${completions.length})</h2>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:var(--badge-bg);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer"><i class="fa-solid fa-xmark"></i></button>
     </div>
     ${completions.length===0?'<div style="text-align:center;color:var(--text2);padding:20px">No completions yet!</div>':
       completions.map(c=>`<div style="padding:12px;background:var(--surface2);border-radius:var(--rsm);margin-bottom:8px">
         <div style="font-size:14px;font-weight:600">${c.challengeTitle||c.challengeId}</div>
-        ${c.time?`<div style="font-size:12px;color:var(--accent);margin-top:2px">⏱ ${c.time}</div>`:''}
+        ${c.time?`<div style="font-size:12px;color:var(--accent);margin-top:2px"><i class="fa-regular fa-clock"></i> ${c.time}</div>`:''}
         ${c.notes?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${c.notes}</div>`:''}
         <div style="font-size:11px;color:var(--text2);margin-top:4px">${new Date(c.createdAt).toLocaleDateString()}</div>
-        ${c.photos&&c.photos.length?`<div style="display:flex;gap:4px;margin-top:6px">${c.photos.map(p=>`<img src="${imgUrl(p)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
+        ${c.photos&&c.photos.length?`<div style="display:flex;gap:4px;margin-top:6px">${c.photos.map(p=>`<img src="${API}${p}" style="width:50px;height:50px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
       </div>`).join('')}
   </div>`;
   menu.addEventListener('click',e=>{if(e.target===menu)menu.remove();});
@@ -700,7 +790,7 @@ async function showMyCompletions(){
 document.getElementById('notif-btn').addEventListener('click',async()=>{
   const panel=document.getElementById('notif-panel');
   if(panel.classList.toggle('open')){
-    await apiFetch(`/api/notifications/read`,{method:'POST',credentials:'include'});
+    await fcFetch(`${API}/api/notifications/read`,{method:'POST'});
     document.getElementById('notif-dot').style.display='none';
     loadNotifications();
   }
@@ -739,14 +829,15 @@ function setFilter(t){filterType=t;document.querySelectorAll('[style*=fixed]').f
 // ── Sheet drag ────────────────────────────────────────────────────────────────
 const sheet=document.getElementById('sheet');
 const mapBtns=document.getElementById('map-btns');
+const TABBAR_H=58;
 let sheetH=280,isDragging=false,sheetStartY=0,sheetStartH=0;
 const SNAP_PEEK=280,SNAP_MID=()=>Math.round(window.innerHeight*.52),SNAP_FULL=()=>Math.round(window.innerHeight*.9);
 function setSheetH(h){
   sheetH=Math.max(120,Math.min(SNAP_FULL(),h));
   sheet.style.height=sheetH+'px';
-  const staticH=document.getElementById('radius-section').offsetHeight+document.getElementById('results-header').offsetHeight+30;
+  const staticH=document.getElementById('loc-search-row').offsetHeight+document.getElementById('current-loc-chip').offsetHeight+document.getElementById('radius-section').offsetHeight+document.getElementById('results-header').offsetHeight+30;
   document.getElementById('results-list').style.height=(sheetH-staticH)+'px';
-  mapBtns.style.bottom=(sheetH+14)+'px';
+  mapBtns.style.bottom=(sheetH+14+TABBAR_H)+'px';
 }
 function snapSheet(h){
   const snaps=[SNAP_PEEK,SNAP_MID(),SNAP_FULL()];
@@ -765,6 +856,52 @@ function stopClickMap(){
   clickingMap=false;clickingForSubmit=false;
   map.getContainer().style.cursor='';
   document.getElementById('dev-click-hint').style.display='none';
+}
+
+// ── Leaderboard tab ──────────────────────────────────────────────────────────
+const tabMapBtn=document.getElementById('tab-map-btn');
+const tabLeaderboardBtn=document.getElementById('tab-leaderboard-btn');
+const leaderboardPanel=document.getElementById('leaderboard-panel');
+let leaderboardLoaded=false;
+function switchToMapTab(){
+  tabMapBtn.classList.add('active');tabLeaderboardBtn.classList.remove('active');
+  leaderboardPanel.classList.remove('open');
+}
+function switchToLeaderboardTab(){
+  tabLeaderboardBtn.classList.add('active');tabMapBtn.classList.remove('active');
+  leaderboardPanel.classList.add('open');
+  loadLeaderboard();
+}
+tabMapBtn.addEventListener('click',switchToMapTab);
+tabLeaderboardBtn.addEventListener('click',switchToLeaderboardTab);
+
+async function loadLeaderboard(){
+  const list=document.getElementById('lb-list');
+  list.innerHTML=`<div id="loading-state"><div class="spinner"></div><span>Loading…</span></div>`;
+  try{
+    const res=await fcFetch(`${API}/api/leaderboard`);
+    const data=await res.json();
+    const lb=data.leaderboard||[];
+    if(!lb.length){
+      list.innerHTML=`<div id="empty-state" style="display:flex"><div class="icon"><i class="fa-solid fa-trophy"></i></div><div class="msg">No completions yet</div><div class="sub">Be the first to log a verified completion!</div></div>`;
+      return;
+    }
+    list.innerHTML=lb.map(u=>{
+      const rankCls=u.rank===1?'gold':u.rank===2?'silver':u.rank===3?'bronze':'';
+      const rankDisplay=u.rank<=3?`<i class="fa-solid fa-medal"></i>`:u.rank;
+      return `<div class="lb-row">
+        <div class="lb-rank ${rankCls}">${rankDisplay}</div>
+        <div class="lb-avatar">${(u.username||'?')[0].toUpperCase()}</div>
+        <div class="lb-name">${u.username||'Unknown'}</div>
+        <div style="text-align:right">
+          <div class="lb-count">${u.verified}</div>
+          <div class="lb-count-label">verified</div>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    list.innerHTML=`<div style="padding:20px;text-align:center;color:var(--text2)"><i class="fa-solid fa-triangle-exclamation"></i> Could not load leaderboard</div>`;
+  }
 }
 
 initAuth().then(loadAll);
