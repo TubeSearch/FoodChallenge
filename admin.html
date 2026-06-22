@@ -174,7 +174,39 @@ tr:hover td{background:var(--card-hover)}
   </div>
 </div>
 
-<script src="shared.js"></script>
+<script>
+// Wrapper around fetch that always includes credentials + the header needed to
+// bypass ngrok's free-tier browser-warning interstitial (which otherwise returns
+// an HTML page instead of JSON and breaks auth checks like the admin gate).
+function fcFetch(url, opts) {
+  opts = opts || {};
+  opts.credentials = 'include';
+  opts.headers = Object.assign({ 'ngrok-skip-browser-warning': '1' }, opts.headers || {});
+  return fetch(url, opts);
+}
+// Builds a full image URL for a stored path. DB-uploaded photos are relative
+// (e.g. "/uploads/photos/abc.jpg") and need the API origin prepended. JSON-sourced
+// challenge images are already full URLs (e.g. foodchallenges.com) and must be
+// left untouched, or prepending API mangles them into a broken nested URL.
+function imgUrl(path, apiBase) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  return apiBase + path;
+}
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(ts) {
+  return new Date(ts).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+}
+</script>
 <script>
 const API = 'https://lavonia-cliquy-daniela.ngrok-free.dev';
 let currentUser = null;
@@ -354,7 +386,7 @@ async function pendingPage(actions) {
     ${pending.map(ch => `
     <div style="padding:16px;border-bottom:1px solid var(--border)">
       <div style="display:flex;gap:12px;align-items:flex-start">
-        ${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center;font-size:16px"><i class="fa-solid fa-utensils"></i></div>'}
+        ${ch.imgSrc?`<img src="${imgUrl(ch.imgSrc,API)}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center;font-size:16px"><i class="fa-solid fa-utensils"></i></div>'}
         <div style="flex:1;min-width:0">
           <div style="font-size:15px;font-weight:700;margin-bottom:2px">${escHtml(ch.title)}</div>
           <div style="font-size:12px;color:var(--text2);margin-bottom:6px">${escHtml(ch.where||'')} · ${escHtml(ch.address||'')} · Submitted by <strong>${escHtml(ch.submittedByUsername)}</strong> ${timeAgo(ch.createdAt)}</div>
@@ -362,7 +394,7 @@ async function pendingPage(actions) {
           ${ch.website?`<div style="font-size:12px"><a href="${escHtml(ch.website)}" target="_blank" rel="noopener" style="color:var(--accent)"><i class="fa-solid fa-globe"></i> Visit website</a></div>`:''}
           ${ch.price||ch.weight||ch.timeLimit?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${[ch.price,ch.weight,ch.timeLimit].filter(Boolean).join(' · ')}</div>`:''}
           ${ch.description?`<div style="font-size:13px;margin-top:8px;line-height:1.5;color:var(--text2)">${escHtml(ch.description).substring(0,300)}${ch.description.length>300?'…':''}</div>`:''}
-          ${ch.photos&&ch.photos.length?`<div class="photo-strip" style="margin-top:8px">${ch.photos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:''}
+          ${ch.photos&&ch.photos.length?`<div class="photo-strip" style="margin-top:8px">${ch.photos.map(p=>`<img src="${imgUrl(p,API)}" onclick="window.open(imgUrl(p,API))">`).join('')}</div>`:''}
         </div>
       </div>
       <div class="td-actions" style="margin-top:12px">
@@ -391,7 +423,7 @@ function challengesPage(actions) {
 function renderChallengeRows(list) {
   if (!list.length) return `<tr><td colspan="8"><div class="empty-table"><div class="icon"><i class="fa-solid fa-utensils"></i></div><p>No challenges</p></div></td></tr>`;
   return list.map(ch=>`<tr>
-    <td>${ch.imgSrc?`<img src="${API}${ch.imgSrc}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-utensils"></i></div>'}</td>
+    <td>${ch.imgSrc?`<img src="${imgUrl(ch.imgSrc,API)}" class="challenge-img">`:'<div class="challenge-img" style="display:flex;align-items:center;justify-content:center"><i class="fa-solid fa-utensils"></i></div>'}</td>
     <td><div class="truncate" style="max-width:180px;font-weight:600">${escHtml(ch.title)}</div></td>
     <td><div class="truncate">${escHtml(ch.address||'')}</div></td>
     <td><span class="tag tag-${ch.status}">${ch.status}</span></td>
