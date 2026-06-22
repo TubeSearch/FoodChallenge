@@ -389,7 +389,9 @@ function fmtDate(ts) {
 }
 </script>
 <script>
-const API = 'https://lavonia-cliquy-daniela.ngrok-free.dev';
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000'
+  : '';
 const DARK = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
