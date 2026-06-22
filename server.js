@@ -44,9 +44,8 @@ const upload = multer({
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: true,        // reflect request origin (needed since you're serving the
-             // frontend from a different host than the API now)
-             credentials: true     // allow the session cookie to be sent/received cross-origin
+  origin: true,
+  credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -58,10 +57,19 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    sameSite: 'none',   // required for cross-origin cookies
-    secure: true         // required when sameSite is 'none' — needs HTTPS (ngrok gives you this)
+    sameSite: 'none',
+    secure: true
   }
 }));
+
+// Never let the browser cache API responses — session state (logged in / not)
+// must always be re-validated from the server, not replayed from cache.
+// Without this, /api/auth/me returns 304 with a stale "user: null" body even
+// after login, which makes admin.html think the user isn't logged in.
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 function requireAuth(req, res, next) {
