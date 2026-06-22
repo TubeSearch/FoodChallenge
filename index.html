@@ -453,15 +453,36 @@ async function loadNotifications() {
 }
 
 // ── Geo ───────────────────────────────────────────────────────────────────────
+// iOS Safari blocks navigator.geolocation unless called directly inside a user
+// gesture (tap). Calling it on page load silently fails with no permission prompt.
+// On other platforms we can auto-geolocate. On iOS we show a small nudge on the
+// locate button so users know to tap it.
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 function tryGeolocate() {
   if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(p => setUserLocation(p.coords.latitude, p.coords.longitude, 'My Location'), ()=>{}, { enableHighAccuracy:true, timeout:8000 });
+  if (isIOS) {
+    // Can't auto-prompt on iOS — highlight the locate button as a nudge
+    const btn = document.getElementById('locate-btn');
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+    btn.title = 'Tap to use your location';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    p => setUserLocation(p.coords.latitude, p.coords.longitude, 'My Location'),
+    () => {},
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
 }
 function setUserLocation(lat, lng, label) {
   userLat=lat; userLng=lng; locationLabel=label||null;
   if (userMarker) map.removeLayer(userMarker);
   userMarker = L.circleMarker([lat,lng],{radius:9,fillColor:'#007aff',fillOpacity:1,color:'#fff',weight:3}).addTo(map);
   map.setView([lat,lng],10,{animate:true});
+  // Reset locate button if it was highlighted as an iOS nudge
+  const locBtn = document.getElementById('locate-btn');
+  locBtn.style.background = '';
+  locBtn.style.color = '';
   updateLocChip();
   render();
 }
@@ -563,7 +584,7 @@ function render() {
       const stars=c.difficulty?'★'.repeat(c.difficulty)+'☆'.repeat(5-c.difficulty):'';
       const done=myCompletions.has(c.id||c.link);
       card.innerHTML=`
-        ${c.imgSrc?`<img class="card-img" src="${API}${c.imgSrc}" loading="lazy" onerror="this.outerHTML='<div class=\\'card-img-ph\\'><i class=\\'fa-solid fa-utensils\\'></i></div>'">`:`<div class="card-img-ph"><i class="fa-solid fa-utensils"></i></div>`}
+        ${c.imgSrc?`<img class="card-img" src="${imgUrl(c.imgSrc,API)}" loading="lazy" onerror="this.outerHTML='<div class=\\'card-img-ph\\'><i class=\\'fa-solid fa-utensils\\'></i></div>'">`:`<div class="card-img-ph"><i class="fa-solid fa-utensils"></i></div>`}
         <div class="card-body">
           <div class="card-title">${c.title||'Unknown Challenge'}</div>
           <div class="card-where">${c.where||c.address||''}</div>
@@ -613,8 +634,8 @@ function openDetail(c) {
     ? `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`
     : (c.address ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(c.address)}` : null);
   document.getElementById('detail-content').innerHTML=`
-    ${c.imgSrc?`<div id="detail-hero-wrap"><img id="detail-hero" src="${API}${c.imgSrc}" alt=""></div>`:''}
-    ${extraPhotos.length?`<div class="detail-photos">${extraPhotos.map(p=>`<img src="${API}${p}" onclick="window.open(API+p)">`).join('')}</div>`:''}
+    ${c.imgSrc?`<div id="detail-hero-wrap"><img id="detail-hero" src="${imgUrl(c.imgSrc,API)}" alt=""></div>`:''}
+    ${extraPhotos.length?`<div class="detail-photos">${extraPhotos.map(p=>`<img src="${imgUrl(p,API)}" onclick="window.open(imgUrl(p,API))">`).join('')}</div>`:''}
     <div id="detail-body">
       <div id="detail-name">${c.title||'Challenge'}</div>
       <div id="detail-where">${c.where||''} ${c.location?'· '+c.location:''}</div>
@@ -779,7 +800,7 @@ async function showMyCompletions(){
         ${c.time?`<div style="font-size:12px;color:var(--accent);margin-top:2px"><i class="fa-regular fa-clock"></i> ${c.time}</div>`:''}
         ${c.notes?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${c.notes}</div>`:''}
         <div style="font-size:11px;color:var(--text2);margin-top:4px">${new Date(c.createdAt).toLocaleDateString()}</div>
-        ${c.photos&&c.photos.length?`<div style="display:flex;gap:4px;margin-top:6px">${c.photos.map(p=>`<img src="${API}${p}" style="width:50px;height:50px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
+        ${c.photos&&c.photos.length?`<div style="display:flex;gap:4px;margin-top:6px">${c.photos.map(p=>`<img src="${imgUrl(p,API)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px">`).join('')}</div>`:''}
       </div>`).join('')}
   </div>`;
   menu.addEventListener('click',e=>{if(e.target===menu)menu.remove();});
